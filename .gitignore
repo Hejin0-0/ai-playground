@@ -9,3 +9,8 @@ build/
 *.log
 .env
 .env.local
+
+# Claude/Agent 설정 파일 (로컬 전용)
+.claude/
+.agents/
+skills-lock.json
