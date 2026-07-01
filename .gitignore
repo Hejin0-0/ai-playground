@@ -1,0 +1,11 @@
+# 참고용 (나중에 폴더 삭제 예정)
+tiny-world-builder/
+
+# 일반
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+.env
+.env.local
