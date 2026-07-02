@@ -66,17 +66,19 @@ self-check exits 0.
 `src/assets/generateAssets.js`
 **Estimated scope:** M
 
-## Task 2: Full asset pack — all models + manifest + contact sheet
+## Task 2: Full asset pack — all models + manifest + contact sheet ✅ DONE
 
 **Description:** Define all ~58 voxel models and the shared manifest (id, file, category,
 footprint, palette icon flag). Generator also emits `assets/contact-sheet.html` that
 displays every PNG on a cream background for visual QA in one glance.
 
 **Acceptance criteria:**
-- [ ] Every manifest entry has a generated PNG; generator fails loudly on any mismatch
-- [ ] Contact sheet shows a coherent set: consistent iso angle, palette, shadows
-- [ ] UI assets (buttons, panel, tab, 6 toolbar icons, highlights) included — no emoji,
-      no external icons
+- [x] Every manifest entry has a generated PNG; generator fails loudly on any mismatch
+      (60 entries; manifest↔model↔file completeness asserts)
+- [x] Contact sheet shows a coherent set: consistent iso angle, palette, shadows
+      (browser-screenshot QA; fixed roof-pancake buildings + dark torii found by it)
+- [x] UI assets (buttons, panel, tab, 6 toolbar icons, highlights) included — no emoji,
+      no external icons (icons are tiny voxel glyphs in the same style)
 
 **Verification:** run generator; count files vs manifest; eyeball contact sheet.
 

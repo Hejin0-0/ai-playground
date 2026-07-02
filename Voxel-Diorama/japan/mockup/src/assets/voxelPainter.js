@@ -192,7 +192,9 @@ function renderSprite(model) {
     }
   }
 
-  return { width, height, pixels };
+  // (ax, ay): pixel position of voxel (0,0,0)'s top-diamond center — the
+  // renderer aligns this to the grid cell origin.
+  return { width, height, pixels, ax: ox, ay: oy };
 }
 
 module.exports = { renderSprite, S, FACE_H };
