@@ -25,20 +25,21 @@
     const canvas = document.getElementById('game');
     const grid = new JTV.IsoGrid(window.JTV_TILE_METRICS);
     const camera = new JTV.Camera(config);
+    const game = new JTV.Game(config, grid);
 
     const status = document.getElementById('status');
     JTV.loadAssets(config).then((assets) => {
-      const renderer = new JTV.Renderer(canvas, config, grid, camera, assets);
+      const renderer = new JTV.Renderer(canvas, config, game, camera, assets);
       renderer.resize();
       fitCameraToGrid(camera, grid, config, renderer.viewW, renderer.viewH);
       // eslint-disable-next-line no-new
-      new JTV.InputManager(canvas, config, grid, camera, renderer);
+      new JTV.InputManager(canvas, config, grid, camera, game);
 
       window.addEventListener('resize', () => renderer.resize());
       if (status) status.remove();
 
       // expose for later tasks / debugging
-      JTV.game = { config, grid, camera, renderer, assets };
+      JTV.instance = { config, grid, camera, game, renderer, assets };
 
       (function loop() {
         renderer.render();

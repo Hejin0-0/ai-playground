@@ -1,27 +1,23 @@
 'use strict';
 // Canvas renderer: cream backdrop + soft vignette, the floating tile platform
-// (back-to-front so front tiles occlude interior dirt walls), optional grid
-// overlay, and the hover highlight. Browser global JTV.Renderer.
+// (terrain back-to-front so front tiles occlude interior dirt walls), objects in
+// isometric depth order (lifted onto the tile-top surface), grid overlay, hover,
+// and the placement/erase preview. Reads world state from the Game. JTV.Renderer.
 
 (function () {
   class Renderer {
-    constructor(canvas, config, grid, camera, assets) {
+    constructor(canvas, config, game, camera, assets) {
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
       this.config = config;
-      this.grid = grid;
+      this.game = game;
+      this.grid = game.grid;
+      this.map = game.map;
       this.camera = camera;
       this.assets = assets;
       this.dpr = Math.min(window.devicePixelRatio || 1, 2);
       this.viewW = 0;
       this.viewH = 0;
-      // terrain layer: cols x rows, defaults to grass (Task 4 makes it editable)
-      const { cols, rows } = config.grid;
-      this.terrain = [];
-      for (let r = 0; r < rows; r++) {
-        this.terrain.push(new Array(cols).fill('tile-grass'));
-      }
-      this.hover = null; // {col, row}
     }
 
     resize() {
@@ -32,20 +28,31 @@
       this.canvas.height = Math.round(rect.height * this.dpr);
     }
 
-    setHover(cell) { this.hover = cell; }
+    // grid-space anchor for an object at (col,row), lifted onto the tile surface
+    objectAnchor(col, row) {
+      const a = this.grid.cellToAnchor(col, row);
+      return { x: a.x, y: a.y - this.grid.objectLift };
+    }
 
-    drawSprite(id, anchorWorld) {
+    drawSprite(id, anchorWorld, alpha) {
       const a = this.assets.get(id);
       if (!a) return;
       const s = this.camera.worldToScreen(anchorWorld);
       const z = this.camera.zoom;
-      this.ctx.drawImage(
-        a.img,
-        s.x - a.meta.ax * z,
-        s.y - a.meta.ay * z,
-        a.meta.w * z,
-        a.meta.h * z,
-      );
+      if (alpha != null) this.ctx.globalAlpha = alpha;
+      this.ctx.drawImage(a.img, s.x - a.meta.ax * z, s.y - a.meta.ay * z, a.meta.w * z, a.meta.h * z);
+      if (alpha != null) this.ctx.globalAlpha = 1;
+    }
+
+    // symmetric flat diamonds (highlights): center on the tile-top face
+    drawCentered(id, centerWorld, alpha) {
+      const a = this.assets.get(id);
+      if (!a) return;
+      const s = this.camera.worldToScreen(centerWorld);
+      const z = this.camera.zoom;
+      if (alpha != null) this.ctx.globalAlpha = alpha;
+      this.ctx.drawImage(a.img, s.x - (a.meta.w / 2) * z, s.y - (a.meta.h / 2) * z, a.meta.w * z, a.meta.h * z);
+      if (alpha != null) this.ctx.globalAlpha = 1;
     }
 
     drawBackground() {
@@ -68,7 +75,6 @@
       const { cols, rows } = this.config.grid;
       ctx.lineWidth = 1;
       ctx.strokeStyle = this.config.colors.gridLine;
-      // outline each cell's top diamond
       for (let r = 0; r < rows; r++) {
         for (let col = 0; col < cols; col++) {
           const ctr = grid.cellCenter(col, r);
@@ -89,37 +95,49 @@
 
     drawTerrain() {
       const { cols, rows } = this.config.grid;
-      // back-to-front: increasing (col+row) means lower on screen / in front
       for (let d = 0; d <= cols + rows - 2; d++) {
         for (let col = 0; col < cols; col++) {
           const r = d - col;
           if (r < 0 || r >= rows) continue;
-          this.drawSprite(this.terrain[r][col], this.grid.cellToAnchor(col, r));
+          this.drawSprite(this.map.terrain[r][col], this.grid.cellToAnchor(col, r));
         }
       }
     }
 
-    // Highlights are symmetric flat diamonds; center them on the tile-top face
-    // so they overlay the picked cell exactly (independent of sprite anchor).
-    drawCentered(id, centerWorld) {
-      const a = this.assets.get(id);
-      if (!a) return;
-      const s = this.camera.worldToScreen(centerWorld);
-      const z = this.camera.zoom;
-      this.ctx.drawImage(
-        a.img,
-        s.x - (a.meta.w / 2) * z,
-        s.y - (a.meta.h / 2) * z,
-        a.meta.w * z,
-        a.meta.h * z,
-      );
+    drawObjects() {
+      const order = this.map.objectsInDrawOrder();
+      for (const obj of order) this.drawSprite(obj.id, this.objectAnchor(obj.col, obj.row));
     }
 
-    drawHover() {
-      if (!this.hover) return;
-      const { col, row } = this.hover;
-      if (!this.grid.inBounds(col, row, this.config.grid.cols, this.config.grid.rows)) return;
-      this.drawCentered('ui-highlight-hover', this.grid.cellCenter(col, row));
+    // footprint cells highlighted valid/invalid + a translucent ghost sprite
+    drawPreview() {
+      const p = this.game.getPreview();
+      if (!p) return;
+
+      if (p.mode === 'erase') {
+        if (p.target) {
+          for (const cell of p.target.cells()) {
+            this.drawCentered('ui-highlight-invalid', this.grid.cellCenter(cell.col, cell.row), 0.9);
+          }
+        } else {
+          this.drawCentered('ui-highlight-hover', this.grid.cellCenter(this.game.hover.col, this.game.hover.row));
+        }
+        return;
+      }
+
+      const hl = p.valid ? 'ui-highlight-valid' : 'ui-highlight-invalid';
+      for (let r = p.row; r < p.row + p.h; r++) {
+        for (let c = p.col; c < p.col + p.w; c++) {
+          if (this.grid.inBounds(c, r, this.config.grid.cols, this.config.grid.rows)) {
+            this.drawCentered(hl, this.grid.cellCenter(c, r), 0.85);
+          }
+        }
+      }
+      // ghost of the asset itself (terrain sits flat, objects lift onto the surface)
+      const anchor = p.category === 'terrain'
+        ? this.grid.cellToAnchor(p.col, p.row)
+        : this.objectAnchor(p.col, p.row);
+      this.drawSprite(p.id, anchor, p.valid ? 0.6 : 0.35);
     }
 
     render() {
@@ -129,7 +147,8 @@
       this.drawBackground();
       if (this.config.ui.showGrid) this.drawGridOverlay();
       this.drawTerrain();
-      this.drawHover();
+      this.drawObjects();
+      this.drawPreview();
     }
   }
 

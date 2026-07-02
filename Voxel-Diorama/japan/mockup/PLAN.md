@@ -174,7 +174,7 @@ pan and wheel zoom.
 `src/grid/IsoGrid.js`
 **Estimated scope:** M
 
-## Task 4: Placement, erase, layers, depth sort
+## Task 4: Placement, erase, layers, depth sort ✅ DONE
 
 **Description:** TileMap with terrain + object layers, PlacementSystem with footprint
 occupancy checks, placement preview (valid/invalid sprites), left-click place,
@@ -182,9 +182,16 @@ right-click erase. Terrain paint replaces terrain under existing props; erase re
 objects only; multi-cell buildings refuse to overlap anything.
 
 **Acceptance criteria:**
-- [ ] Sprites depth-sort correctly (walk a lantern "behind" a temple visually)
-- [ ] 3×3 temple can't be placed over any occupied cell; preview turns invalid
-- [ ] Painting path under a placed lantern keeps the lantern
+- [x] Sprites depth-sort correctly (walk a lantern "behind" a temple visually)
+      (topological painter's order via a strict "behind" predicate — beats naive
+      far-corner sort on the +col-side case; verified in-browser occlusion + node test)
+- [x] 3×3 temple can't be placed over any occupied cell; preview turns invalid
+      (red 3×3 footprint + dimmed ghost; green valid ghost on free cells)
+- [x] Painting path under a placed lantern keeps the lantern (independent layers)
+
+**Notes:** objects lift onto the tile-top surface (objectLift = 4·zStepPx, the geometry
+from Task 3); left-drag pans without placing (click/drag threshold); right-click erases
+objects only. TileMap has a node self-check for occupancy + depth order.
 
 **Verification:** manual; TileMap occupancy logic gets one `node` assert self-check.
 

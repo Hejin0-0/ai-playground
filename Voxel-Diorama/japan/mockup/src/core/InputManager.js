@@ -1,17 +1,18 @@
 'use strict';
-// Mouse input -> camera pan (drag), zoom (wheel, cursor-anchored), and hover
-// cell tracking. Thin for Task 3; place/erase land in Task 4. Global JTV.InputManager.
+// Mouse input -> camera pan (left-drag), zoom (wheel, cursor-anchored), hover
+// tracking, and edits: left-click places/paints, right-click erases. A press
+// only counts as a place if it didn't cross the drag threshold. Global JTV.InputManager.
 
 (function () {
-  const DRAG_THRESHOLD = 4; // px before a press counts as a drag (not a click)
+  const DRAG_THRESHOLD = 4; // px before a press becomes a pan (not a click)
 
   class InputManager {
-    constructor(canvas, config, grid, camera, renderer) {
+    constructor(canvas, config, grid, camera, game) {
       this.canvas = canvas;
       this.config = config;
       this.grid = grid;
       this.camera = camera;
-      this.renderer = renderer;
+      this.game = game;
       this.pressing = false;
       this.dragging = false;
       this.last = { x: 0, y: 0 };
@@ -24,21 +25,34 @@
       return { x: e.clientX - r.left, y: e.clientY - r.top };
     }
 
-    updateHover(pos) {
+    cellAt(pos) {
       const world = this.camera.screenToWorld(pos);
       const cell = this.grid.pointToCell(world.x, world.y);
       const { cols, rows } = this.config.grid;
-      this.renderer.setHover(this.grid.inBounds(cell.col, cell.row, cols, rows) ? cell : null);
+      return this.grid.inBounds(cell.col, cell.row, cols, rows) ? cell : null;
+    }
+
+    updateHover(pos) {
+      this.game.setHover(this.cellAt(pos));
     }
 
     _bind() {
       const c = this.canvas;
+
       c.addEventListener('mousedown', (e) => {
-        this.pressing = true;
-        this.dragging = false;
         const p = this.localPos(e);
-        this.last = p;
-        this.pressStart = p;
+        this.updateHover(p);
+        if (e.button === 2) {                 // right-click: erase immediately
+          e.preventDefault();
+          this.game.secondaryAction(this.game.hover);
+          return;
+        }
+        if (e.button === 0) {
+          this.pressing = true;
+          this.dragging = false;
+          this.last = p;
+          this.pressStart = p;
+        }
       });
 
       window.addEventListener('mousemove', (e) => {
@@ -49,21 +63,25 @@
             this.dragging = true;
             c.classList.add('grabbing');
           }
-          if (this.dragging) {
-            this.camera.panBy(p.x - this.last.x, p.y - this.last.y);
-          }
+          if (this.dragging) this.camera.panBy(p.x - this.last.x, p.y - this.last.y);
         }
         this.last = p;
         this.updateHover(p);
       });
 
-      window.addEventListener('mouseup', () => {
-        this.pressing = false;
-        this.dragging = false;
-        c.classList.remove('grabbing');
+      window.addEventListener('mouseup', (e) => {
+        if (e.button === 0 && this.pressing) {
+          if (!this.dragging) {
+            this.updateHover(this.localPos(e));
+            this.game.primaryAction(this.game.hover);
+          }
+          this.pressing = false;
+          this.dragging = false;
+          c.classList.remove('grabbing');
+        }
       });
 
-      c.addEventListener('mouseleave', () => this.renderer.setHover(null));
+      c.addEventListener('mouseleave', () => this.game.setHover(null));
 
       c.addEventListener('wheel', (e) => {
         e.preventDefault();
@@ -73,7 +91,6 @@
         this.updateHover(p);
       }, { passive: false });
 
-      // reserve right-click for erase (Task 4); never show the browser menu
       c.addEventListener('contextmenu', (e) => e.preventDefault());
     }
   }

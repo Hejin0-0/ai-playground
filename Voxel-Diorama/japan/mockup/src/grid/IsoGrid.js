@@ -24,8 +24,12 @@
       // lattice point itself) — using the ground-plane center instead would put
       // hover a half-tile low.
       const horizCenterY = this.halfH * (this.cellVoxels - 1) / this.cellVoxels;
-      const heightY = ((metrics.tileTopVoxels || 4) - 1) * metrics.zStepPx;
+      this.tileTopVoxels = metrics.tileTopVoxels || 4;
+      const heightY = (this.tileTopVoxels - 1) * metrics.zStepPx;
       this.surfaceOffsetY = horizCenterY - heightY;
+      // objects are modeled from z=0; lift their anchor by the full tile height
+      // so their base rests on the tile's top surface (grid-space px, up).
+      this.objectLift = this.tileTopVoxels * metrics.zStepPx;
     }
 
     // grid cell -> anchor lattice point in grid-space pixels (pre-camera)
