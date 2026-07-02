@@ -197,7 +197,7 @@ function renderSprite(model) {
   return { width, height, pixels, ax: ox, ay: oy };
 }
 
-module.exports = { renderSprite, S, FACE_H };
+module.exports = { renderSprite, S, FACE_H, VoxelModelBuilder, mulberry32, hashString };
 
 // ---------------------------------------------------------------------------
 // Self-check: `node src/assets/voxelPainter.js`. Box projections are convex

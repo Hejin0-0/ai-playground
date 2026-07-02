@@ -17,6 +17,14 @@ build step and no server.
 - **One shared voxel painter.** Every sprite is defined as a small 3D voxel model
   (list of colored boxes) projected to 2D iso with fixed top/left/right face shading and
   a shared pastel palette. One painter ⇒ all ~58 assets automatically style-coherent.
+- **(Amended by Task 2b)** World-asset rendering upgrades from the 2D pixel painter to
+  real 3D: Three.js voxel scenes rendered offline via Puppeteer, isolated in
+  `tools/render-assets/` with its own `package.json` (three + puppeteer are
+  devDependencies of the *build tool only* — the game runtime stays zero-dependency and
+  `file://`-compatible). The voxel model definitions in `assetModels.js` are reused
+  unchanged; only the "painter" swaps. Flat UI chrome and toolbar icons keep the 2D
+  zero-dep pipeline. The 60-PNG contract, `meta.js` anchors, and completeness asserts
+  all survive.
 - **Classic `<script>` tags, not ES modules.** ES modules are blocked on `file://` by
   CORS in Chrome; the spec requires double-clicking `index.html`. Files load in
   dependency order and register on a single `JTV` namespace. `drawImage` and
@@ -88,8 +96,57 @@ displays every PNG on a cream background for visual QA in one glance.
 **Estimated scope:** L (many small models, one mechanical pattern — split into two
 sittings if fatigue shows: world assets, then UI assets)
 
+## Task 2b: Three.js offline rendering upgrade for world assets ✅ DONE
+
+**Description:** Swap the world-asset painter from 2D pixel projection to real 3D.
+Each voxel model becomes a Three.js scene (one box per voxel, reusing the existing
+`assetModels.js` build functions verbatim — same shapes, same seeded jitter), lit by a
+warm rig (HemisphereLight ambient + directional key + low fill) with a shadow-catcher
+ground plane so sprites bake *real* soft shadows. Shot with an OrthographicCamera at
+the classic game-iso angle (azimuth 45°, elevation 30° → projected tile footprint is
+exactly 2:1, keeping Task 3's grid math clean), captured as transparent PNGs via
+Puppeteer (`omitBackground`). All tooling lives in `tools/render-assets/` with its own
+`package.json` — three + puppeteer are build-time devDependencies only.
+
+**Unchanged contracts (hard constraints):**
+- Game runtime stays zero-dependency, classic script tags, opens via `file://`
+- 60 PNGs in `/assets` with the same ids and naming
+- `assets/meta.js` anchor system stays; anchors now computed by projecting the
+  voxel-space origin through the camera; meta additionally exports tile metrics
+  (tileW/tileH/zStep) so Task 3 reads projection constants instead of hardcoding
+- Manifest↔model↔file completeness asserts unchanged and still green
+- UI chrome (buttons/panel/tab/highlights) + 6 toolbar icons stay on the 2D pipeline
+
+**Acceptance criteria:**
+- [x] One command regenerates all 46 world PNGs via Three.js and the 14 UI PNGs via
+      the 2D path; completeness checks pass (`npm run render` in tools/render-assets)
+- [x] Warm key/fill/ambient lighting + real soft ground shadows; buildings and torii
+      read visibly more dimensional in a before/after screenshot comparison
+      (2D pack backed up for comparison; sRGB double-brightening bug caught and fixed)
+- [x] Orthographic 45°/30° camera; projected tile footprint measures exactly 2:1
+      (tileMetrics {tileW:128, tileH:64, zStepPx:9.8}; sprite bitmaps carry a ~1px
+      antialiasing fringe, which placement ignores — anchors align the geometry)
+- [x] No runtime dependency added to the game; three + puppeteer-core live only in
+      tools/render-assets/package.json devDependencies
+
+**Verification:** completeness asserts green; contact-sheet re-QA in a real browser
+(five buildings + torii against the reference images); side-by-side old/new sprite
+comparison for shadow/dimensionality improvement.
+
+**Dependencies:** Task 2
+**Files likely touched:** `tools/render-assets/` (new: package.json, camera/lights/
+renderer, page harness), `src/assets/generateAssets.js` (route voxel models to the 3D
+path, keep UI path), `assets/*`
+**Estimated scope:** M–L
+
+**Risks:** Puppeteer's Chromium download is large (one-time, build machine only);
+rendered PNG bytes may differ across GPUs/drivers (acceptable — assets are committed,
+regeneration is optional); headless-gl rejected as the backend (fragile native builds
+on modern macOS/Node).
+
 ### Checkpoint: Asset pack complete
 - [ ] Generator runs clean; contact sheet reviewed; style matches the two references
+      (re-run after Task 2b)
 
 ### Phase 2: Core Game
 

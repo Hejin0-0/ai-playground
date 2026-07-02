@@ -1,0 +1,12 @@
+{
+  "name": "jtv-render-assets",
+  "private": true,
+  "description": "Build-time only: renders the world sprites as Three.js scenes through headless Chrome. Never shipped to the game runtime.",
+  "scripts": {
+    "render": "node render.js && node ../../src/assets/generateAssets.js"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.0.0",
+    "three": "0.147.0"
+  }
+}
