@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Japanese Temple Voxels</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="status">Loading assets…</div>
+
+  <!-- classic script tags in dependency order: works from file:// (no modules, no fetch) -->
+  <script src="assets/meta.js"></script>
+  <script src="src/assets/assetManifest.js"></script>
+  <script src="src/config.js"></script>
+  <script src="src/grid/IsoGrid.js"></script>
+  <script src="src/core/Camera.js"></script>
+  <script src="src/assets/assetLoader.js"></script>
+  <script src="src/core/Renderer.js"></script>
+  <script src="src/core/InputManager.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>

@@ -345,20 +345,20 @@ var JTV_SPRITE_META = {
  "ui-highlight-hover": {
   "w": 132,
   "h": 68,
-  "ax": 10,
-  "ay": -22
+  "ax": 66,
+  "ay": 34
  },
  "ui-highlight-valid": {
   "w": 132,
   "h": 68,
-  "ax": 10,
-  "ay": -22
+  "ax": 66,
+  "ay": 34
  },
  "ui-highlight-invalid": {
   "w": 132,
   "h": 68,
-  "ax": 10,
-  "ay": -22
+  "ax": 66,
+  "ay": 34
  }
 };
 var JTV_TILE_METRICS = {"tileW":128,"tileH":64,"zStepPx":9.8,"cellVoxels":8,"tileTopVoxels":4};

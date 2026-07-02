@@ -79,11 +79,10 @@ function diamondHighlight(fill, edge) {
       c.put(x, y, hex(nearEdge ? edge : fill), nearEdge ? 255 : 95);
     }
   }
-  // anchor: diamond center == cell-origin diamond center of an 8x8 tile top
-  c.ax = cx - 7 * S; // voxel (0,0) diamond center is 7*S left of cell center
-  c.ay = pad + T / 2 - (7 * S) / 2 + (S / 2) * 0 - 28; // see note below
-  // ponytail: highlight anchoring is finalized in Task 3 against the renderer;
-  // ax/ay above are provisional and unused until then.
+  // The renderer center-draws highlights (Renderer.drawCentered) onto the
+  // tile-top face, so anchor = bitmap center of this symmetric diamond.
+  c.ax = cx;
+  c.ay = pad + T / 2;
   return c;
 }
 

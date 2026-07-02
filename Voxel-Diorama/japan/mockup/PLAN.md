@@ -150,7 +150,7 @@ on modern macOS/Node).
 
 ### Phase 2: Core Game
 
-## Task 3: Canvas shell — loader, camera, grid render, hover
+## Task 3: Canvas shell — loader, camera, grid render, hover ✅ DONE
 
 **Description:** `index.html` + config + asset loader (reads the same manifest) + render
 loop. Draw the floating 12×12 grass platform on a cream backdrop with soft editor fog,
@@ -158,9 +158,12 @@ grid overlay, hovered-cell highlight (using the generated highlight sprite), mou
 pan and wheel zoom.
 
 **Acceptance criteria:**
-- [ ] Double-clicking `index.html` shows the platform; no console errors on `file://`
-- [ ] Pan (drag) and zoom (wheel, cursor-anchored) are smooth
-- [ ] Hover highlight tracks the correct cell at any pan/zoom
+- [x] Double-clicking `index.html` shows the platform; no console errors on `file://`
+      (classic script tags, no fetch/modules; verified in-browser, only a favicon 404)
+- [x] Pan (drag) and zoom (wheel, cursor-anchored) are smooth (drag delta 1:1;
+      world point under cursor stays fixed across zoom — verified dx=dy=0)
+- [x] Hover highlight tracks the correct cell at any pan/zoom (probed at zoom 0.72 and
+      1.15; corrected the pick surface from ground-plane to tile-top, IsoGrid self-check)
 
 **Verification:** manual in browser; screen-to-grid math has an assert self-check
 (round-trips a few known points).
