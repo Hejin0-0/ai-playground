@@ -32,7 +32,7 @@
 
     // left-click: place/paint the selected asset, or erase if in erase mode
     primaryAction(cell) {
-      if (!this.inBounds(cell)) return;
+      if (!this.inBounds(cell) || this.tool === 'pan') return;
       if (this.tool === 'erase') { this.placement.erase(cell.col, cell.row); return; }
       this.placement.apply(this.selectedId, cell.col, cell.row);
     }
@@ -42,9 +42,16 @@
       if (this.inBounds(cell)) this.placement.erase(cell.col, cell.row);
     }
 
+    // clear the world back to default terrain (Task 7 adds confirm + localStorage)
+    reset() {
+      const TileMap = window.JTV.TileMap;
+      this.map = new TileMap(this.config.grid.cols, this.config.grid.rows, 'tile-grass');
+      this.placement = new window.JTV.PlacementSystem(this.map, this.manifest);
+    }
+
     // What the renderer should preview at the hovered cell this frame.
     getPreview() {
-      if (!this.inBounds(this.hover)) return null;
+      if (!this.inBounds(this.hover) || this.tool === 'pan') return null;
       const { col, row } = this.hover;
       if (this.tool === 'erase') {
         const obj = this.map.objectAt(col, row);

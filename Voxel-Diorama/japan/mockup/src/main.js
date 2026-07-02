@@ -35,11 +35,16 @@
       // eslint-disable-next-line no-new
       new JTV.InputManager(canvas, config, grid, camera, game);
 
+      const ui = new JTV.UIManager(config, game, renderer);
+      // Task 7 replaces these with the SaveSystem (versioned + auto-load + confirm)
+      ui.on('reset', () => { game.reset(); ui.sync(); });
+      ui.on('save', () => {});
+
       window.addEventListener('resize', () => renderer.resize());
       if (status) status.remove();
 
       // expose for later tasks / debugging
-      JTV.instance = { config, grid, camera, game, renderer, assets };
+      JTV.instance = { config, grid, camera, game, renderer, ui, assets };
 
       (function loop() {
         renderer.render();

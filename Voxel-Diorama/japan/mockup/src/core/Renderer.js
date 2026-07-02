@@ -12,7 +12,6 @@
       this.config = config;
       this.game = game;
       this.grid = game.grid;
-      this.map = game.map;
       this.camera = camera;
       this.assets = assets;
       this.dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -99,16 +98,17 @@
         for (let col = 0; col < cols; col++) {
           const r = d - col;
           if (r < 0 || r >= rows) continue;
-          let id = this.map.terrain[r][col];
+          const map = this.game.map;
+          let id = map.terrain[r][col];
           // water auto-connects: swap in the 4-neighbor-mask variant
-          if (id === 'tile-water') id = 'tile-water-' + this.map.waterMaskAt(col, r);
+          if (id === 'tile-water') id = 'tile-water-' + map.waterMaskAt(col, r);
           this.drawSprite(id, this.grid.cellToAnchor(col, r));
         }
       }
     }
 
     drawObjects() {
-      const order = this.map.objectsInDrawOrder();
+      const order = this.game.map.objectsInDrawOrder();
       for (const obj of order) this.drawSprite(obj.id, this.objectAnchor(obj.col, obj.row));
     }
 

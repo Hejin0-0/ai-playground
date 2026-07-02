@@ -228,7 +228,7 @@ cover inner corners of L-pools (1-voxel notch) — 8-neighbor variants if it eve
 
 ### Phase 3: UI & Persistence
 
-## Task 6: Toolbar, palette, HUD from generated UI assets
+## Task 6: Toolbar, palette, HUD from generated UI assets ✅ DONE
 
 **Description:** DOM-based UI skinned exclusively with generated PNGs: left toolbar
 (Place/Erase/Pan/Grid/Save/Reset with generated icons), bottom palette with 5 category
@@ -236,9 +236,16 @@ tabs whose entries use the asset PNGs as icons, clear selected state, title head
 "Japanese Temple Voxels", instruction panel (place / erase / pan / zoom).
 
 **Acceptance criteria:**
-- [ ] All visible chrome comes from `/assets/` PNGs — zero emoji, zero icon fonts
-- [ ] Selecting a palette item + tool mode is visually unambiguous
-- [ ] Layout matches reference mood: cream background, floating rounded panels
+- [x] All visible chrome comes from `/assets/` PNGs — zero emoji, zero icon fonts
+      (panels/buttons/tabs via border-image; icons + thumbnails via <img>)
+- [x] Selecting a palette item + tool mode is visually unambiguous (orange active
+      state on the selected item and current tool; verified click-through)
+- [x] Layout matches reference mood: cream background, floating rounded panels
+
+**Notes:** #ui root is pointer-events:none so gaps click through to the canvas while
+panels capture their own clicks (no accidental placement behind the UI). Pan tool =
+no-op primary action. Save/Reset buttons are wired to injected handlers; Reset clears
+now, full Save/load + confirm + keyboard shortcuts land in Task 7.
 
 **Verification:** manual visual pass against the reference screenshot.
 
