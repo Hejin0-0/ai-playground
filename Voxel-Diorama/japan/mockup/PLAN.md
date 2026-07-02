@@ -44,7 +44,7 @@ shared by the generator and the game so they can never drift.
 
 ### Phase 1: Asset Pipeline
 
-## Task 1: PNG encoder + voxel sprite painter + generator harness
+## Task 1: PNG encoder + voxel sprite painter + generator harness ✅ DONE
 
 **Description:** Build the pipeline: pure-JS PNG encoder (zlib-based), iso voxel painter
 (voxel model → shaded 2D sprite with transparency + baked drop shadow), and the generator
@@ -52,9 +52,11 @@ entry that writes PNGs to `/assets/`. Prove it end-to-end with 3 assets: grass t
 stone lantern, sakura tree.
 
 **Acceptance criteria:**
-- [ ] `node src/assets/generateAssets.js` writes valid transparent PNGs into `/assets/`
-- [ ] The 3 proof sprites read as pastel Japanese-voxel style in an image viewer
-- [ ] Encoder has an assert-based self-check (encode → decode header/CRC round-trip)
+- [x] `node src/assets/generateAssets.js` writes valid transparent PNGs into `/assets/`
+      (cross-validated against macOS `sips` decoder)
+- [x] The 3 proof sprites read as pastel Japanese-voxel style in an image viewer
+- [x] Encoder has an assert-based self-check (encode → decode header/CRC round-trip)
+      (bonus: painter also has a geometry self-check — seam/hole/symmetry probes)
 
 **Verification:** run the generator; open the PNGs; `node src/assets/pngEncoder.js`
 self-check exits 0.
