@@ -99,7 +99,10 @@
         for (let col = 0; col < cols; col++) {
           const r = d - col;
           if (r < 0 || r >= rows) continue;
-          this.drawSprite(this.map.terrain[r][col], this.grid.cellToAnchor(col, r));
+          let id = this.map.terrain[r][col];
+          // water auto-connects: swap in the 4-neighbor-mask variant
+          if (id === 'tile-water') id = 'tile-water-' + this.map.waterMaskAt(col, r);
+          this.drawSprite(id, this.grid.cellToAnchor(col, r));
         }
       }
     }

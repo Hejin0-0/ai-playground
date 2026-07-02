@@ -64,6 +64,9 @@ var ASSET_MANIFEST = [
   { id: 'building-watchtower', name: 'Watchtower', category: 'buildings', footprint: [2, 2] },
   { id: 'building-temple', name: 'Main Temple', category: 'buildings', footprint: [3, 3] },
 
+  // --- water connection variants (render-time only, never in the palette) ---
+  // pushed programmatically below the literal: tile-water-0 .. tile-water-15
+
   // --- UI chrome (not placeable, excluded from the palette) ---
   { id: 'ui-button', name: 'Button', category: 'ui', footprint: [1, 1] },
   { id: 'ui-button-hover', name: 'Button Hover', category: 'ui', footprint: [1, 1] },
@@ -80,5 +83,14 @@ var ASSET_MANIFEST = [
   { id: 'ui-highlight-valid', name: 'Valid Placement', category: 'ui', footprint: [1, 1] },
   { id: 'ui-highlight-invalid', name: 'Invalid Placement', category: 'ui', footprint: [1, 1] },
 ];
+
+for (var wm = 0; wm < 16; wm++) {
+  ASSET_MANIFEST.push({
+    id: 'tile-water-' + wm,
+    name: 'Water Variant ' + wm,
+    category: 'terrain-variant',
+    footprint: [1, 1],
+  });
+}
 
 if (typeof module !== 'undefined') module.exports = { ASSET_MANIFEST };

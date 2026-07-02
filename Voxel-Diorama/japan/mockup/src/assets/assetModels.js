@@ -92,6 +92,22 @@ function dirtBody(v, h = 3) {
   v.box(0, 0, 0, 8, 8, h, C.dirt, { jitter: 0.05 });
 }
 
+// Recessed water with stone banks on the closed sides. mask bits (grid space):
+// 1 = N(-row, model y=0) open, 2 = E(+col, x=7), 4 = S(+row, y=7), 8 = W(-col, x=0).
+function waterVariant(mask) {
+  return {
+    shadow: false,
+    build(v) {
+      v.box(0, 0, 0, 8, 8, 2, C.dirt, { jitter: 0.05 });        // base
+      v.box(0, 0, 2, 8, 8, 1, C.waterTop, { jitter: 0.06 });    // water surface
+      if (!(mask & 1)) v.box(0, 0, 2, 8, 1, 2, C.stone, { jitter: 0.05 });
+      if (!(mask & 2)) v.box(7, 0, 2, 1, 8, 2, C.stone, { jitter: 0.05 });
+      if (!(mask & 4)) v.box(0, 7, 2, 8, 1, 2, C.stone, { jitter: 0.05 });
+      if (!(mask & 8)) v.box(0, 0, 2, 1, 8, 2, C.stone, { jitter: 0.05 });
+    },
+  };
+}
+
 const MODELS = {
   // ===== terrain =====
   'tile-grass': {
@@ -120,13 +136,10 @@ const MODELS = {
     shadow: false,
     build(v) { v.box(0, 0, 0, 8, 8, 4, C.dirt, { jitter: 0.06 }); },
   },
-  'tile-water': {
-    shadow: false,
-    build(v) {
-      v.box(0, 0, 0, 8, 8, 3, C.water, { jitter: 0.03 });
-      v.box(0, 0, 2, 8, 8, 1, C.waterTop, { jitter: 0.06 }); // recessed 1 below grass
-    },
-  },
+  // Water connects: the renderer swaps 'tile-water' cells for the variant
+  // matching the 4-neighbor water mask (see TileMap.waterMaskAt). Stone banks
+  // sit on sides WITHOUT a water neighbor; open sides meet seamlessly.
+  'tile-water': waterVariant(0), // palette icon / preview ghost: isolated look
   'tile-stone': {
     shadow: false,
     build(v) {
@@ -660,5 +673,8 @@ const MODELS = {
     },
   },
 };
+
+// the 16 render-time water connection variants (manifest category 'terrain-variant')
+for (let m = 0; m < 16; m++) MODELS['tile-water-' + m] = waterVariant(m);
 
 module.exports = { MODELS };

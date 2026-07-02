@@ -200,16 +200,24 @@ objects only. TileMap has a node self-check for occupancy + depth order.
 `src/building/PlacedObject.js`, `src/core/Game.js`
 **Estimated scope:** M
 
-## Task 5: Water auto-connection
+## Task 5: Water auto-connection ✅ DONE
 
 **Description:** Water and canal-edge tiles select edge variants from the 4-neighbor
 water bitmask at render time so adjacent water reads as one body with clean banks.
 
 **Acceptance criteria:**
-- [ ] A painted 2×3 water pool shows edges only on its outer border
-- [ ] Single water tile shows all four edges
+- [x] A painted 2×3 water pool shows edges only on its outer border (verified
+      in-browser: interior seams invisible, corner/edge masks correct)
+- [x] Single water tile shows all four edges (mask 0 = isolated basin)
 
 **Verification:** manual paint test; bitmask→variant function assert self-check.
+
+**Notes:** 16 generated variants `tile-water-0..15` (category `terrain-variant`,
+never in the palette) from one parameterized model; the pack grows 60 → 76 PNGs.
+`TileMap.waterMaskAt` computes the mask (canal-edge counts as water so pools feed
+canals; out-of-bounds keeps a bank at the platform border); the renderer swaps
+`tile-water` for its variant at draw time. Known ceiling: 4-neighbor masks don't
+cover inner corners of L-pools (1-voxel notch) — 8-neighbor variants if it ever bothers.
 
 **Dependencies:** Task 4
 **Files likely touched:** `src/grid/TileMap.js`, `src/core/Renderer.js`

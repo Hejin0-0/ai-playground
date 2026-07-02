@@ -33,6 +33,25 @@
       if (this.inBounds(col, row)) this.terrain[row][col] = tileId;
     }
 
+    // --- water auto-connection ---
+    // A side is "open" (no bank) when its neighbor holds water. Canal edges
+    // count as water so pools flow into canals. Out of bounds is not water,
+    // keeping a bank along the platform border.
+    isWaterLike(col, row) {
+      const t = this.getTerrain(col, row);
+      return t === 'tile-water' || t === 'tile-canal-edge';
+    }
+
+    // bit1 = N(-row), bit2 = E(+col), bit4 = S(+row), bit8 = W(-col)
+    waterMaskAt(col, row) {
+      let m = 0;
+      if (this.isWaterLike(col, row - 1)) m |= 1;
+      if (this.isWaterLike(col + 1, row)) m |= 2;
+      if (this.isWaterLike(col, row + 1)) m |= 4;
+      if (this.isWaterLike(col - 1, row)) m |= 8;
+      return m;
+    }
+
     // --- object layer ---
     objectAt(col, row) {
       return this.occ.get(col + ',' + row) || null;
@@ -165,6 +184,23 @@
     map.removeObjectAt(6, 6); // any temple cell
     assert.strictEqual(map.objectAt(5, 5), null, 'temple fully removed');
     assert.strictEqual(map.canPlace(5, 5, 3, 3), true, 'cells freed after erase');
+
+    // water auto-connection mask: bit1=N(-row) bit2=E(+col) bit4=S(+row) bit8=W(-col)
+    const wm = new TileMap(12, 12, 'tile-grass');
+    for (const [c, r] of [[4, 4], [5, 4], [4, 5], [5, 5], [4, 6], [5, 6]]) {
+      wm.setTerrain(c, r, 'tile-water'); // 2x3 pool, cols 4-5, rows 4-6
+    }
+    wm.setTerrain(9, 9, 'tile-water');   // isolated tile
+    assert.strictEqual(wm.waterMaskAt(9, 9), 0, 'isolated water: all four banks');
+    assert.strictEqual(wm.waterMaskAt(4, 4), 2 | 4, 'pool NW corner: open E+S');
+    assert.strictEqual(wm.waterMaskAt(5, 5), 1 | 4 | 8, 'pool mid-right edge: open N+S+W');
+    assert.strictEqual(wm.waterMaskAt(5, 6), 1 | 8, 'pool SE corner: open N+W');
+    // canal-edge counts as water so pools visually connect to canals
+    wm.setTerrain(4, 3, 'tile-canal-edge');
+    assert.strictEqual(wm.waterMaskAt(4, 4), 1 | 2 | 4, 'canal neighbor opens N');
+    // grid border: out-of-bounds is not water -> bank at the platform edge
+    wm.setTerrain(0, 0, 'tile-water');
+    assert.strictEqual(wm.waterMaskAt(0, 0), 0, 'platform corner keeps banks');
 
     console.log('TileMap self-check OK');
   }
