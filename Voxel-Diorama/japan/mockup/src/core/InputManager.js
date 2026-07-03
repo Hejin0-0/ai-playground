@@ -7,17 +7,19 @@
   const DRAG_THRESHOLD = 4; // px before a press becomes a pan (not a click)
 
   class InputManager {
-    constructor(canvas, config, grid, camera, game) {
+    constructor(canvas, config, grid, camera, game, ui) {
       this.canvas = canvas;
       this.config = config;
       this.grid = grid;
       this.camera = camera;
       this.game = game;
+      this.ui = ui;
       this.pressing = false;
       this.dragging = false;
       this.last = { x: 0, y: 0 };
       this.pressStart = { x: 0, y: 0 };
       this._bind();
+      this._bindKeys();
     }
 
     localPos(e) {
@@ -92,6 +94,26 @@
       }, { passive: false });
 
       c.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+
+    // keyboard shortcuts: 1-5 categories, E erase, G grid, S save, R reset
+    _bindKeys() {
+      const cats = ['terrain', 'nature', 'props', 'water', 'buildings'];
+      window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser combos alone
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        let handled = true;
+        if (e.key >= '1' && e.key <= '5') this.ui.selectCategory(cats[+e.key - 1]);
+        else switch (e.key.toLowerCase()) {
+          case 'e': this.ui.setTool('erase'); break;
+          case 'g': this.ui.toggleGrid(); break;
+          case 's': this.ui.save(); break;
+          case 'r': this.ui.reset(); break;
+          default: handled = false;
+        }
+        if (handled) e.preventDefault();
+      });
     }
   }
 

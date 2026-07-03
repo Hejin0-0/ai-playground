@@ -27,24 +27,33 @@
     const camera = new JTV.Camera(config);
     const game = new JTV.Game(config, grid);
 
+    const store = new JTV.SaveSystem('jtv-temple-voxels');
+    const savedMap = store.load();
+    if (savedMap) game.loadMap(savedMap); // auto-load previous world on start
+
     const status = document.getElementById('status');
     JTV.loadAssets(config).then((assets) => {
       const renderer = new JTV.Renderer(canvas, config, game, camera, assets);
       renderer.resize();
       fitCameraToGrid(camera, grid, config, renderer.viewW, renderer.viewH);
-      // eslint-disable-next-line no-new
-      new JTV.InputManager(canvas, config, grid, camera, game);
 
       const ui = new JTV.UIManager(config, game, renderer);
-      // Task 7 replaces these with the SaveSystem (versioned + auto-load + confirm)
-      ui.on('reset', () => { game.reset(); ui.sync(); });
-      ui.on('save', () => {});
+      ui.on('save', () => store.save(game.map));
+      ui.on('reset', () => {
+        if (!window.confirm('Reset the world? This clears everything and your saved layout.')) return;
+        game.reset();
+        store.clear();
+        ui.sync();
+      });
+
+      // eslint-disable-next-line no-new
+      new JTV.InputManager(canvas, config, grid, camera, game, ui);
 
       window.addEventListener('resize', () => renderer.resize());
       if (status) status.remove();
 
-      // expose for later tasks / debugging
-      JTV.instance = { config, grid, camera, game, renderer, ui, assets };
+      // expose for debugging
+      JTV.instance = { config, grid, camera, game, renderer, ui, store, assets };
 
       (function loop() {
         renderer.render();

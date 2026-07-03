@@ -16,13 +16,15 @@
 
       this.hud = new window.JTV.HUD(root);
 
+      this.handlers = {};           // save/reset injected by main
+
       this.toolbar = new window.JTV.Toolbar(root, config, {
-        place: () => { game.setTool('place'); this.sync(); },
-        erase: () => { game.setTool('erase'); this.sync(); },
-        pan: () => { game.setTool('pan'); this.sync(); },
-        grid: () => { config.ui.showGrid = !config.ui.showGrid; this.sync(); },
-        save: () => this.handlers.save && this.handlers.save(),
-        reset: () => this.handlers.reset && this.handlers.reset(),
+        place: () => this.setTool('place'),
+        erase: () => this.setTool('erase'),
+        pan: () => this.setTool('pan'),
+        grid: () => this.toggleGrid(),
+        save: () => this.save(),
+        reset: () => this.reset(),
       });
 
       this.palette = new window.JTV.AssetPalette(root, config, window.ASSET_MANIFEST, (id) => {
@@ -30,12 +32,29 @@
         this.sync();
       });
 
-      this.handlers = {};           // save/reset injected by main (Task 7 formalizes)
       this.palette.setSelected(game.selectedId);
       this.sync();
     }
 
     on(name, fn) { this.handlers[name] = fn; }
+
+    // --- action layer: toolbar clicks AND keyboard shortcuts route here ---
+    setTool(tool) { this.game.setTool(tool); this.sync(); }
+    toggleGrid() { this.config.ui.showGrid = !this.config.ui.showGrid; this.sync(); }
+    selectCategory(key) { this.palette.showCategory(key); }
+    save() {
+      if (this.handlers.save) this.handlers.save();
+      this.flashSaved();
+    }
+    reset() { if (this.handlers.reset) this.handlers.reset(); }
+
+    // brief visual confirmation on save (buttons give no other feedback)
+    flashSaved() {
+      const btn = this.toolbar.buttons.save;
+      btn.classList.add('active');
+      clearTimeout(this._flash);
+      this._flash = setTimeout(() => btn.classList.remove('active'), 350);
+    }
 
     // push current game state onto the toolbar/palette highlights
     sync() {

@@ -42,11 +42,16 @@
       if (this.inBounds(cell)) this.placement.erase(cell.col, cell.row);
     }
 
-    // clear the world back to default terrain (Task 7 adds confirm + localStorage)
+    // swap in a world (from a load) and rebuild the placement rules over it
+    loadMap(map) {
+      this.map = map;
+      this.placement = new window.JTV.PlacementSystem(map, this.manifest);
+    }
+
+    // clear the world back to default terrain
     reset() {
       const TileMap = window.JTV.TileMap;
-      this.map = new TileMap(this.config.grid.cols, this.config.grid.rows, 'tile-grass');
-      this.placement = new window.JTV.PlacementSystem(this.map, this.manifest);
+      this.loadMap(new TileMap(this.config.grid.cols, this.config.grid.rows, 'tile-grass'));
     }
 
     // What the renderer should preview at the hovered cell this frame.

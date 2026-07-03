@@ -254,18 +254,26 @@ now, full Save/load + confirm + keyboard shortcuts land in Task 7.
 `src/ui/AssetPalette.js`, `src/ui/HUD.js`, `styles.css`
 **Estimated scope:** M
 
-## Task 7: Shortcuts, save/load, reset, grid toggle
+## Task 7: Shortcuts, save/load, reset, grid toggle ✅ DONE
 
 **Description:** Keyboard map (1–5 categories, E erase, G grid, S save, R reset),
 SaveSystem serializing `{version, terrain, objects}` to localStorage with auto-load on
 start, reset with confirm, grid visibility toggle wired to toolbar + key.
 
 **Acceptance criteria:**
-- [ ] Save → reload page → identical world
-- [ ] Reset clears to all-grass and wipes the save only after confirm
-- [ ] Every shortcut in the spec works and matches its toolbar button state
+- [x] Save → reload page → identical world (objects, terrain, and rebuilt occupancy
+      verified after a real page reload)
+- [x] Reset clears to all-grass and wipes the save only after confirm (decline = no
+      change; accept = clear + localStorage wipe)
+- [x] Every shortcut in the spec works and matches its toolbar button state
+      (1–5 tabs, E/G/S/R; Ctrl/Cmd+S left to the browser)
 
-**Verification:** manual reload test; serialize→deserialize round-trip assert self-check.
+**Verification:** browser reload round-trip; SaveSystem node self-check (serialize↔
+deserialize, occupancy rebuild, malformed-input tolerance).
+
+**Notes:** keyboard routes through the UIManager action layer so toolbar + palette
+stay in sync. SaveSystem validates on load (versioned; skips malformed terrain/objects)
+since localStorage is user-controlled. Save flashes the Save button briefly.
 
 **Dependencies:** Task 6
 **Files likely touched:** `src/storage/SaveSystem.js`, `src/core/Game.js`,
