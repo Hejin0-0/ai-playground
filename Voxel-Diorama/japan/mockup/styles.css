@@ -18,11 +18,28 @@ html, body {
   display: block;
   width: 100vw;
   height: 100vh;
-  cursor: grab;
+  cursor: default;
   touch-action: none;
 }
 
+/* cursor communicates the active tool (not colour alone) */
+#game[data-tool="place"] { cursor: cell; }
+#game[data-tool="erase"] { cursor: crosshair; }
+#game[data-tool="pan"] { cursor: grab; }
 #game.grabbing { cursor: grabbing; }
+
+/* visible keyboard focus on every interactive control */
+.jtv-btn:focus-visible,
+.tab:focus-visible {
+  outline: 3px solid #e8934a;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jtv-btn { transition: none; }
+  .jtv-btn:active { transform: none; }
+}
 
 #status {
   position: absolute;
@@ -31,7 +48,7 @@ html, body {
   transform: translate(-50%, -50%);
   font-size: 15px;
   letter-spacing: 0.03em;
-  color: #9a8b70;
+  color: #7a6a4e;
 }
 
 /* ---- UI layer: panels float over the canvas; gaps click through ---- */
@@ -72,7 +89,7 @@ html, body {
   font-size: 22px; font-weight: 700; letter-spacing: 0.01em;
   color: #4a4033;
 }
-#titlebar p { font-size: 12.5px; color: #a1937a; margin-top: 2px; }
+#titlebar p { font-size: 12.5px; color: #7a6a4e; margin-top: 2px; }
 
 /* ---- left toolbar ---- */
 #toolbar {
@@ -97,7 +114,7 @@ html, body {
 #tabs { display: flex; gap: 4px; margin-bottom: 10px; }
 .tab {
   padding: 7px 16px 9px; font-size: 12px; font-weight: 600;
-  letter-spacing: 0.04em; text-transform: uppercase; color: #9a8b70;
+  letter-spacing: 0.04em; text-transform: uppercase; color: #7a6a4e;
   border: none; background: transparent; cursor: pointer;
   border-radius: 9px 9px 0 0;
 }
@@ -134,7 +151,7 @@ html, body {
 }
 #instructions h2 {
   font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
-  color: #a1937a; margin-bottom: 8px; font-weight: 700;
+  color: #7a6a4e; margin-bottom: 8px; font-weight: 700;
 }
 #instructions ul { list-style: none; }
 #instructions li {

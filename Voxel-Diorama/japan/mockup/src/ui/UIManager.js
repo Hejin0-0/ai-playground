@@ -56,10 +56,12 @@
       this._flash = setTimeout(() => btn.classList.remove('active'), 350);
     }
 
-    // push current game state onto the toolbar/palette highlights
+    // push current game state onto the toolbar/palette highlights + cursor
     sync() {
       this.toolbar.refreshState(this.game.tool, this.config.ui.showGrid);
       this.palette.setSelected(this.game.selectedId);
+      const canvas = document.getElementById('game');
+      if (canvas) canvas.dataset.tool = this.game.tool;
     }
   }
 

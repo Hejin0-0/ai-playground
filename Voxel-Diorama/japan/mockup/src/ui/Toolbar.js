@@ -6,11 +6,11 @@
 (function () {
   const BUTTONS = [
     { key: 'place', label: 'Place', icon: 'ui-icon-place', tool: 'place' },
-    { key: 'erase', label: 'Erase', icon: 'ui-icon-erase', tool: 'erase' },
+    { key: 'erase', label: 'Erase', icon: 'ui-icon-erase', tool: 'erase', shortcut: 'E' },
     { key: 'pan', label: 'Pan', icon: 'ui-icon-pan', tool: 'pan' },
-    { key: 'grid', label: 'Grid', icon: 'ui-icon-grid' },
-    { key: 'save', label: 'Save', icon: 'ui-icon-save' },
-    { key: 'reset', label: 'Reset', icon: 'ui-icon-reset' },
+    { key: 'grid', label: 'Grid', icon: 'ui-icon-grid', shortcut: 'G' },
+    { key: 'save', label: 'Save', icon: 'ui-icon-save', shortcut: 'S' },
+    { key: 'reset', label: 'Reset', icon: 'ui-icon-reset', shortcut: 'R' },
   ];
 
   class Toolbar {
@@ -27,9 +27,14 @@
         const btn = document.createElement('button');
         btn.className = 'jtv-btn tool-btn';
         btn.type = 'button';
+        btn.title = def.shortcut ? `${def.label} (${def.shortcut})` : def.label;
+        btn.setAttribute('aria-label', btn.title);
+        // tool + grid buttons are toggles; save/reset are actions
+        if (def.tool || def.key === 'grid') btn.setAttribute('aria-pressed', 'false');
         const img = document.createElement('img');
         img.src = config.assetPath + def.icon + '.png';
-        img.alt = def.label;
+        img.alt = '';               // decorative; the button is already labelled
+        img.setAttribute('aria-hidden', 'true');
         const span = document.createElement('span');
         span.textContent = def.label;
         btn.appendChild(img);
@@ -41,11 +46,14 @@
       root.appendChild(bar);
     }
 
-    // reflect current tool + grid visibility on the buttons
+    // reflect current tool + grid visibility on the buttons (class + ARIA)
     refreshState(tool, gridOn) {
       for (const def of BUTTONS) {
-        const active = def.tool ? def.tool === tool : (def.key === 'grid' && gridOn);
-        this.buttons[def.key].classList.toggle('active', !!active);
+        if (!def.tool && def.key !== 'grid') continue;
+        const active = def.tool ? def.tool === tool : gridOn;
+        const btn = this.buttons[def.key];
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', String(active));
       }
     }
   }

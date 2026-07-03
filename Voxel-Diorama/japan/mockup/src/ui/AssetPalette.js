@@ -33,19 +33,23 @@
       this.tabsEl = document.createElement('div');
       this.tabsEl.id = 'tabs';
       this.tabButtons = {};
-      for (const c of CATEGORIES) {
+      CATEGORIES.forEach((c, i) => {
         const t = document.createElement('button');
         t.className = 'tab';
         t.type = 'button';
         t.textContent = c.label;
+        t.title = `${c.label} (${i + 1})`;
+        t.setAttribute('aria-pressed', 'false');
         t.addEventListener('click', () => this.showCategory(c.key));
         this.tabButtons[c.key] = t;
         this.tabsEl.appendChild(t);
-      }
+      });
       panel.appendChild(this.tabsEl);
 
       this.itemsEl = document.createElement('div');
       this.itemsEl.id = 'items';
+      this.itemsEl.setAttribute('role', 'group');
+      this.itemsEl.setAttribute('aria-label', 'Assets');
       panel.appendChild(this.itemsEl);
 
       root.appendChild(panel);
@@ -54,7 +58,11 @@
 
     showCategory(key) {
       this.activeCategory = key;
-      for (const c of CATEGORIES) this.tabButtons[c.key].classList.toggle('active', c.key === key);
+      for (const c of CATEGORIES) {
+        const active = c.key === key;
+        this.tabButtons[c.key].classList.toggle('active', active);
+        this.tabButtons[c.key].setAttribute('aria-pressed', String(active));
+      }
 
       this.itemsEl.innerHTML = '';
       this.itemButtons = {};
@@ -62,11 +70,15 @@
         const btn = document.createElement('button');
         btn.className = 'jtv-btn item';
         btn.type = 'button';
+        btn.title = entry.name;
+        btn.setAttribute('aria-label', entry.name);
+        btn.setAttribute('aria-pressed', String(entry.id === this.selectedId));
         const thumb = document.createElement('div');
         thumb.className = 'thumb';
         const img = document.createElement('img');
         img.src = this.config.assetPath + entry.id + '.png';
-        img.alt = entry.name;
+        img.alt = '';                 // decorative; button is labelled
+        img.setAttribute('aria-hidden', 'true');
         thumb.appendChild(img);
         const span = document.createElement('span');
         span.textContent = entry.name;
@@ -88,7 +100,9 @@
     setSelected(id) {
       this.selectedId = id;
       for (const key in this.itemButtons) {
-        this.itemButtons[key].classList.toggle('active', key === id);
+        const active = key === id;
+        this.itemButtons[key].classList.toggle('active', active);
+        this.itemButtons[key].setAttribute('aria-pressed', String(active));
       }
     }
   }
