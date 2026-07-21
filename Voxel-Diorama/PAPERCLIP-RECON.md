@@ -45,6 +45,7 @@ securitySchemes 3종: `BoardSessionAuth`(세션 쿠키) · `BoardApiKeyAuth`(인
 ## 조직·예산 (D12·L3 해소)
 
 - **고용**: `POST /api/companies/{companyId}/agent-hires` — role enum에 `engineer·pm·qa·cto·devops·designer·pm...` 존재. **Developer=role `engineer`(title "ThreeJSDev"), TD=role `pm` 또는 `cto`(title "Technical Director")**. (Paperclip에 "Technical Director"는 title, role은 enum에서 선택.)
+- **에이전트 어댑터(LLM 백엔드)**: `adapterType` enum = `process·http·claude_local·codex_local·cursor_cloud·gemini_local·grok_local·hermes_gateway·hermes_local·opencode_local·pi_local·cursor·openclaw_gateway`. → **Claude 사원 = `claude_local`, Codex 사원 = `codex_local`**. 내장 에이전트(Reflection Coach·Summarizer)는 `claude_local`. 고용 시 `adapterType`으로 지정. 실제 실행엔 해당 CLI/자격 설정 필요.
 - `POST /api/companies/{companyId}/agents/{id}/approve|pause|resume|terminate`, `GET/POST /api/agents/{id}/keys` (에이전트 키).
 - **예산 (L3 해소)**: 회사 `budgetMonthlyCents` + `PATCH /api/agents/{agentId}/budgets` + `/api/companies/{companyId}/budgets/policies` + `budget-incidents/{id}/resolve`. 월 단위 예산(`budgetMonthlyCents`)·정책·초과 인시던트 전부 실재.
 - 비용 조회: `/api/companies/{companyId}/costs/*` (by-agent, by-project, summary…).
@@ -80,6 +81,10 @@ securitySchemes 3종: `BoardSessionAuth`(세션 쿠키) · `BoardApiKeyAuth`(인
 - LLM 어댑터 미설정 → 이슈 배정 시 에이전트가 자동 실행을 시도하다 `error`(예상됨). **실제 에이전트 코딩 + 작업 검수 승인 생성은 LLM 설정 후** 가능. Paperclip UI(`http://127.0.0.1:3100`)에서 프로바이더·키 설정 필요(키 입력은 사용자 직접).
 - 웹훅 실시간 유무·거절→재작업 자동 트리거 여부는 실사용에서 확인(폴링 폴백 항상 유효).
 
-### 생성된 테스트 데이터
+### 워크포스 / 테스트 데이터 (2026-07-21 정리 후)
 
-회사 Voxel-Diorama(`edcdbd03…`) · 프로젝트 · 에이전트 TD/ThreeJSDev · 이슈 VOX-1 · 코멘트 1 · governance 테스트 승인 3건(decided). Paperclip 내장 에이전트(Reflection Coach·Summarizer)는 자동 provision됨. 도그푸딩 회사로 유지하거나 삭제 가능.
+**유지(도그푸딩 워크포스)** — 회사 Voxel-Diorama(`edcdbd03…`) · 프로젝트 "Voxel-Diorama v0.1" · 에이전트: Technical Director(pm, `process`), ThreeJSDev(engineer, `process`), **CodexQA(qa, `codex_local`)**. 내장 Reflection Coach·Summarizer(`claude_local`, paused).
+
+**정리된 테스트 흔적** — 이슈 VOX-1은 하드 삭제 불가(런 이력 11개 → DELETE 500)라 `cancelled`+아카이브 처리. governance 테스트 승인 3건은 삭제 엔드포인트 없음(불변 감사 기록, decided 상태로 잔존).
+
+**미정렬** — TD·ThreeJSDev는 아직 범용 `process` 어댑터. "Claude 사원"으로 만들려면 `claude_local`로 변경 필요(선택).
