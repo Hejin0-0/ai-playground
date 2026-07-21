@@ -1,0 +1,509 @@
+{
+ "issue_create": {
+  "required": [
+   "title",
+   "status"
+  ],
+  "properties": {
+   "projectId": {
+    "type": "string",
+    "enum": null
+   },
+   "projectWorkspaceId": {
+    "type": "string",
+    "enum": null
+   },
+   "goalId": {
+    "type": "string",
+    "enum": null
+   },
+   "parentId": {
+    "type": "string",
+    "enum": null
+   },
+   "blockedByIssueIds": {
+    "type": "array",
+    "enum": null
+   },
+   "inheritExecutionWorkspaceFromIssueId": {
+    "type": "string",
+    "enum": null
+   },
+   "title": {
+    "type": "string",
+    "enum": null
+   },
+   "description": {
+    "type": "string",
+    "enum": null
+   },
+   "status": {
+    "type": "string",
+    "enum": [
+     "backlog",
+     "todo",
+     "in_progress",
+     "in_review",
+     "done",
+     "blocked",
+     "cancelled"
+    ]
+   },
+   "workMode": {
+    "type": "string",
+    "enum": [
+     "standard",
+     "ask",
+     "planning",
+     "skill_test"
+    ]
+   },
+   "harnessKind": {
+    "type": "string",
+    "enum": [
+     "skill_test"
+    ]
+   },
+   "priority": {
+    "type": "string",
+    "enum": [
+     "critical",
+     "high",
+     "medium",
+     "low"
+    ]
+   },
+   "assigneeAgentId": {
+    "type": "string",
+    "enum": null
+   },
+   "assigneeUserId": {
+    "type": "string",
+    "enum": null
+   },
+   "requestDepth": {
+    "type": "integer",
+    "enum": null
+   },
+   "createdByUserId": {
+    "type": "string",
+    "enum": null
+   },
+   "responsibleUserId": {
+    "type": "string",
+    "enum": null
+   },
+   "billingCode": {
+    "type": "string",
+    "enum": null
+   },
+   "assigneeAdapterOverrides": {
+    "type": "object",
+    "enum": null
+   },
+   "executionPolicy": {
+    "type": "object",
+    "enum": null
+   },
+   "executionWorkspaceId": {
+    "type": "string",
+    "enum": null
+   },
+   "executionWorkspacePreference": {
+    "type": "string",
+    "enum": [
+     "inherit",
+     "shared_workspace",
+     "isolated_workspace",
+     "operator_branch",
+     "reuse_existing",
+     "agent_default"
+    ]
+   },
+   "executionWorkspaceSettings": {
+    "type": "object",
+    "enum": null
+   },
+   "labelIds": {
+    "type": "array",
+    "enum": null
+   },
+   "watchdogDiscovery": {
+    "type": "object",
+    "enum": null
+   },
+   "watchdog": {
+    "type": "object",
+    "enum": null
+   },
+   "idempotencyKey": {
+    "type": "string",
+    "enum": null
+   },
+   "allowDuplicate": {
+    "type": "boolean",
+    "enum": null
+   }
+  }
+ },
+ "project_create": {
+  "required": [
+   "name"
+  ],
+  "properties": {
+   "goalId": {
+    "type": "string",
+    "enum": null
+   },
+   "goalIds": {
+    "type": "array",
+    "enum": null
+   },
+   "name": {
+    "type": "string",
+    "enum": null
+   },
+   "description": {
+    "type": "string",
+    "enum": null
+   },
+   "status": {
+    "type": "string",
+    "enum": [
+     "backlog",
+     "planned",
+     "in_progress",
+     "completed",
+     "cancelled"
+    ]
+   },
+   "leadAgentId": {
+    "type": "string",
+    "enum": null
+   },
+   "targetDate": {
+    "type": "string",
+    "enum": null
+   },
+   "color": {
+    "type": "string",
+    "enum": null
+   },
+   "icon": {
+    "type": "string",
+    "enum": [
+     "folder",
+     "rocket",
+     "code",
+     "terminal",
+     "database",
+     "globe",
+     "package",
+     "boxes",
+     "box",
+     "layers",
+     "briefcase",
+     "compass",
+     "target",
+     "flame",
+     "zap",
+     "star",
+     "bug",
+     "wrench",
+     "hammer",
+     "lightbulb",
+     "sparkles",
+     "shield",
+     "lock",
+     "search",
+     "cog",
+     "brain",
+     "cpu",
+     "git-branch",
+     "file-code",
+     "puzzle",
+     "gem",
+     "atom",
+     "heart",
+     "mail",
+     "message-square",
+     "crown",
+     "radar",
+     "telescope",
+     "hexagon"
+    ]
+   },
+   "env": {
+    "type": "object",
+    "enum": null
+   },
+   "executionWorkspacePolicy": {
+    "type": "object",
+    "enum": null
+   },
+   "archivedAt": {
+    "type": "string",
+    "enum": null
+   },
+   "workspace": {
+    "type": "object",
+    "enum": null
+   }
+  }
+ },
+ "company_create": {
+  "required": [
+   "name"
+  ],
+  "properties": {
+   "name": {
+    "type": "string",
+    "enum": null
+   },
+   "description": {
+    "type": "string",
+    "enum": null
+   },
+   "budgetMonthlyCents": {
+    "type": "integer",
+    "enum": null
+   },
+   "attachmentMaxBytes": {
+    "type": "integer",
+    "enum": null
+   },
+   "defaultResponsibleUserId": {
+    "type": "string",
+    "enum": null
+   }
+  }
+ },
+ "agent_hire": {
+  "required": [
+   "name"
+  ],
+  "properties": {
+   "name": {
+    "type": "string",
+    "enum": null
+   },
+   "role": {
+    "type": "string",
+    "enum": [
+     "ceo",
+     "cto",
+     "cmo",
+     "cfo",
+     "security",
+     "engineer",
+     "designer",
+     "pm",
+     "qa",
+     "devops",
+     "researcher",
+     "general"
+    ]
+   },
+   "title": {
+    "type": "string",
+    "enum": null
+   },
+   "icon": {
+    "type": "string",
+    "enum": [
+     "bot",
+     "cpu",
+     "brain",
+     "zap",
+     "rocket",
+     "code",
+     "terminal",
+     "shield",
+     "eye",
+     "search",
+     "wrench",
+     "hammer",
+     "lightbulb",
+     "sparkles",
+     "star",
+     "heart",
+     "flame",
+     "bug",
+     "cog",
+     "database",
+     "globe",
+     "lock",
+     "mail",
+     "message-square",
+     "file-code",
+     "git-branch",
+     "package",
+     "puzzle",
+     "target",
+     "wand",
+     "atom",
+     "circuit-board",
+     "radar",
+     "swords",
+     "telescope",
+     "microscope",
+     "crown",
+     "gem",
+     "hexagon",
+     "pentagon",
+     "fingerprint"
+    ]
+   },
+   "reportsTo": {
+    "type": "string",
+    "enum": null
+   },
+   "capabilities": {
+    "type": "string",
+    "enum": null
+   },
+   "desiredSkills": {
+    "type": "array",
+    "enum": null
+   },
+   "adapterType": {
+    "type": "string",
+    "enum": null
+   },
+   "adapterConfig": {
+    "type": "object",
+    "enum": null
+   },
+   "instructionsBundle": {
+    "type": "object",
+    "enum": null
+   },
+   "runtimeConfig": {
+    "type": "object",
+    "enum": null
+   },
+   "defaultEnvironmentId": {
+    "type": "string",
+    "enum": null
+   },
+   "budgetMonthlyCents": {
+    "type": "integer",
+    "enum": null
+   },
+   "permissions": {
+    "type": "object",
+    "enum": null
+   },
+   "metadata": {
+    "type": "object",
+    "enum": null
+   },
+   "sourceIssueId": {
+    "type": "string",
+    "enum": null
+   },
+   "sourceIssueIds": {
+    "type": "array",
+    "enum": null
+   }
+  }
+ },
+ "company_approval_create": {
+  "required": [
+   "type",
+   "payload"
+  ],
+  "properties": {
+   "type": {
+    "type": "string",
+    "enum": [
+     "hire_agent",
+     "approve_ceo_strategy",
+     "budget_override_required",
+     "request_board_approval"
+    ]
+   },
+   "requestedByAgentId": {
+    "type": "string",
+    "enum": null
+   },
+   "payload": {
+    "type": "object",
+    "enum": null
+   },
+   "issueIds": {
+    "type": "array",
+    "enum": null
+   }
+  }
+ },
+ "approval_actions": {
+  "approve": {
+   "required": [],
+   "properties": {
+    "decisionNote": {
+     "type": "string",
+     "enum": null
+    }
+   }
+  },
+  "reject": {
+   "required": [],
+   "properties": {
+    "decisionNote": {
+     "type": "string",
+     "enum": null
+    }
+   }
+  },
+  "request-revision": {
+   "required": [],
+   "properties": {
+    "decisionNote": {
+     "type": "string",
+     "enum": null
+    }
+   }
+  },
+  "resubmit": {
+   "required": [],
+   "properties": {
+    "payload": {
+     "type": "object",
+     "enum": null
+    }
+   }
+  }
+ },
+ "securitySchemes": {
+  "BoardSessionAuth": {
+   "type": "apiKey",
+   "in": "cookie",
+   "name": "paperclip_session",
+   "description": "Board session cookie in authenticated mode. Paperclip uses Better Auth; cookie transport may vary by deployment."
+  },
+  "BoardApiKeyAuth": {
+   "type": "http",
+   "scheme": "bearer",
+   "bearerFormat": "Board API Key",
+   "description": "Board API key presented in the Authorization bearer header."
+  },
+  "AgentBearerAuth": {
+   "type": "http",
+   "scheme": "bearer",
+   "bearerFormat": "Agent API Key or Agent JWT",
+   "description": "Agent API key or Paperclip-issued local agent JWT presented in the Authorization bearer header."
+  }
+ },
+ "global_security": [
+  {
+   "BoardSessionAuth": []
+  },
+  {
+   "BoardApiKeyAuth": []
+  },
+  {
+   "AgentBearerAuth": []
+  }
+ ]
+}

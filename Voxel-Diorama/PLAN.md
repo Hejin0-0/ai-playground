@@ -2,7 +2,7 @@
 
 > **한 문장 정의**: 내가 AI 직원에게 맡긴 실제 업무의 성공과 실패가, 국가 테마 3D 섬의 건물과 폐허로 영구히 남는다.
 >
-> **문서 상태**: 설계 확정본 (2026-07-20) — Claude v0.2 · Codex 상세안 · Gemini v0.3 3안 최종 통합 · 2026-07-21 적대적 리뷰 HIGH 8 + MEDIUM 10 + LOW 3 = 21건 전부 반영 · Codex-Final / Gemini-Final 최종안 3자 대조 통합 (기존 문제점·통합 근거는 각 위치의 HTML 주석에 기록)
+> **문서 상태**: 설계 확정본 (2026-07-20) — Claude v0.2 · Codex 상세안 · Gemini v0.3 3안 최종 통합 · 2026-07-21 적대적 리뷰 HIGH 8 + MEDIUM 10 + LOW 3 = 21건 전부 반영 · Codex-Final / Gemini-Final 최종안 3자 대조 통합 · **2026-07-21 Phase 1 Paperclip API 실사 반영** (§3.4 상태 enum·D10 우선순위 실측 정정, M9/M10/L3 해소 — PAPERCLIP-RECON.md) (기존 문제점·통합 근거는 각 위치의 HTML 주석에 기록)
 > **제품 목표**: v0.1 (macOS 로컬 개인 도구, 1인 사용자) · **개발 체제**: 나(CEO/최종 검수자) + Paperclip AI 워크포스
 > **원칙**: 시각적 완성도보다 반복 가능한 업무 루프를 먼저 증명한다. 이 문서가 유일한 기준이며, 변경은 §2 결정 로그에 기록한다.
 
@@ -40,7 +40,7 @@
 | D7 | 에셋 정책 | **Kenney CC0 원본을 kenney.nl에서 직접 다운로드** + `ASSETS.md`에 팩 이름·버전·URL 기록. task-arcade는 게임 규칙 참고만, 코드·파일 복사 금지 (AGPL clean-room) |
 | D8 | 건물 배치 | **자동·결정론**: 건물 = `hash(issueId + attemptNumber)`로 티어 내 선택, 부지 = 섬 중앙→바깥 결정적 나선. 수동 배치 편집기는 v1.1 후보 |
 | D9 | 반려 규칙 | 반려 = 해당 시도의 **영구 폐허**. 재작업 재제출 = 새 시도(Attempt)·새 부지, 기존 폐허 불변. 수정 요청(코멘트) ≠ 반려 — 단, **§3.2 완료 조건 중 하나라도 미충족이면 반드시 반려로 처리**하고, 수정 요청은 완료 조건을 모두 충족한 결과물의 마이너 조정에만 허용. 한 업무에 폐허 여러 개 가능, 완성 건물은 최대 1개 |
-| D10 | 점수 | **고정 점수만**: Low 15 · Medium 30 · High 45 · **Urgent 60** (Paperclip 우선순위에서 자동 도출, 점수 직접 입력 없음. **발주 창에서 우선순위 선택 필수 — 기본값 No priority 금지**). 섬별 + 평생 누적 표시. 점수 소비 경제 없음. 효율 보너스는 v1.1 백로그(§9)에 공식 보존 |
+| D10 | 점수 | **고정 점수만**: Low 15 · Medium 30 · High 45 · **Critical 60** (Paperclip 우선순위 `critical/high/medium/low`에서 자동 도출 — Phase 1 실사 확정, 점수 직접 입력 없음. priority는 null 가능하므로 **발주 창에서 우선순위 선택 필수 — No priority 금지**). 섬별 + 평생 누적 표시. 점수 소비 경제 없음. 효율 보너스는 v1.1 백로그(§9)에 공식 보존 |
 | D11 | 테마 순서 | **`base` 테마(Kenney)로 루프 먼저 완성 → `jp-kyoto` 버티컬 슬라이스**. 한 여행 = 고정 테마 1개(도중 변경 불가). 테마 미보유 자산 역할은 base로 fallback |
 | D12 | AI 조직 | 초기 2명: Technical Director(분해·배정) + Developer/ThreeJSDev(구현·테스트·증거 제출). VoxelArtist 고용은 Phase 5(교토 테마 제작) 시점에 검토 |
 | D13 | 브리지 | 별도 Node 앱 대신 **Vite 서버 미들웨어**로 구현 — 단일 프로세스로 Codex 요구사항(127.0.0.1 전용, 자격 증명 서버 측 보관, idempotency, 파일 원자적 쓰기) 전부 충족. 커지면 그때 분리 |
@@ -50,7 +50,7 @@
 <!-- 2026-07-21 적대적 리뷰(PLAN-REVIEW.md) 반영 — 기존 내용과 문제점 기록:
 D3 기존: "행성 로비 → 국가 테마 → 여행별 새 섬"까지만. 문제: L3 잠금 결정(행성→국가→스프린트 군도)의 국가 계층이 삭제인지 이연인지 판단 불가, ThemeManifest anchor 필드도 소실 → 구조 유지 + v1.1 이연으로 확정.
 D9 기존: "수정 요청(코멘트) ≠ 반려"에 사용 기준·경계 없음. 문제: 손실 회피 심리상 폐허를 피하려 수정 요청만 쓰게 되어 '반려=영구 폐허' 긴장감이 실전에서 발동하지 않음 → 완료 조건 미충족 = 강제 반려 경계 추가.
-D10 기존: "Low 15 · Medium 30 · High 45 · Critical 60, 사용자 입력 없음". 문제: Paperclip 실제 우선순위 스케일은 0 No priority(기본값)/1 Urgent/2 High/3 Medium/4 Low — 'Critical' 없음, 기본값 No priority면 자동 도출 불가 → Urgent로 개명 + 발주 시 우선순위 선택 필수. Phase 1 실사에서 필드 값 재확인.
+D10 이력: 리뷰(미검증 판정)가 "실제 스케일은 Urgent/High/Medium/Low + No priority"라 주장해 한때 Urgent로 바꿨으나, **Phase 1 실사(2026.720.0)에서 실제 enum은 `critical/high/medium/low`로 확인 → Critical 복원**. priority가 null 가능한 점만 실사와 일치하므로 "발주 시 선택 필수(No priority 금지)"는 우리 앱 강제 규칙으로 유지. (교훈: 실사 전 문서 인용 기반 지적은 실측으로 뒤집힐 수 있음.)
 -->
 
 지휘 체계:
@@ -104,37 +104,37 @@ AI 직원이 **할 수 없는** 것: 업무 최종 승인·거절 / 여행 종�
 
 ### 3.4 상태 투영 매핑
 
-투영 로직은 **고정 상태 이름이 아니라 Paperclip 상태 카테고리 + 워크스페이스에 설정된 상태 ID**를 기준으로 동작한다 (실제 상태명·검수 상태 ID는 Phase 1 실사로 확정).
+투영 로직은 Paperclip 이슈 상태(**Phase 1 실사로 확정된 고정 상태명**: `backlog · todo · in_progress · in_review · done · blocked · cancelled`)와 blocker 의존성(`blockedByIssueIds`)을 기준으로 동작한다. 검수는 네이티브 Approval 객체(approve/reject/request-revision/resubmit)로 처리한다 — 매핑 근거는 PAPERCLIP-RECON.md.
 
-| Paperclip 상태 (카테고리 · 설정 상태) | 3D 세계 표현 | Astryx HUD |
+| Paperclip 상태 | 3D 세계 표현 | Astryx HUD |
 |---|---|---|
 | (활성 여행 없음) | 3D 섬 장면 없음 — 행성 로비만 표시. 첫 실행도 이 상태 | '여행 시작' 단일 CTA |
-| Triage · Backlog | 미건설 (빈 부지) | 대기 중 발주 목록 |
-| Unstarted (배정/재작업 대기) | 미건설 (빈 부지) | 대기 중 발주 목록 |
-| Started — 작업 상태 | 공사 중 마커 | 담당 직원 이름 + 작업·시간 표시 |
-| Started — 검수 상태 (예: In Review, Phase 1 확정) | 반투명 미리보기 건물 | [검수 필요] 증거 패널 노출 |
-| 사용자 승인 → Completed | 완성 건물 (영구) | 점수 획득 + 담당 직원 표기, 카탈로그 고정 |
-| 사용자 거절 → Unstarted 재분류 | 붕괴 연출 → 폐허 (영구) | 반려 사유 필수 + 담당 직원 표기 |
-| 수정 요청 (코멘트 이벤트, 상태 아님) | 미리보기 → 공사 중 마커로 전환 (Started 작업 상태 복귀) — 반려 아님, 완료 조건 전부 충족 시에만 (D9). 전이 상세: PlacementAttempt 규칙 6 | 피드백 전달 |
-| Completed — 검수 우회(직접 완료) | 조정 필요 — 자동 건물 없음 | [조정 필요] 표시 |
-| Cancelled | 진행 표식 제거. 신규 건설·폐허 생성 없음 — 이전 거절로 생긴 폐허는 D9대로 영구 보존 | 취소 기록 |
-| blocker 의존성 존재 (상태 아님, 별도 조회) | 경고 표식, 폐허 없음 | 차단 사유 표시 |
+| `backlog`, `todo` | 미건설 (빈 부지) | 대기 중 발주 목록 |
+| `in_progress` | 공사 중 마커 | 담당 직원 이름 + 작업·시간 표시 |
+| `in_review` | 반투명 미리보기 건물 | [검수 필요] 증거 패널 노출 |
+| 사용자 승인 → `done` (approval approve) | 완성 건물 (영구) | 점수 획득 + 담당 직원 표기, 카탈로그 고정 |
+| 사용자 거절 → `todo` (approval reject) | 붕괴 연출 → 폐허 (영구) | 반려 사유 필수 + 담당 직원 표기 |
+| 수정 요청 (approval request-revision) | 미리보기 → 공사 중 마커로 전환 (`in_progress` 복귀) — 반려 아님, 완료 조건 전부 충족 시에만 (D9). 전이 상세: 규칙 6 | 피드백 전달 |
+| Paperclip에서 검수 우회 직접 `done` | 조정 필요 — 자동 건물 없음 | [조정 필요] 표시 |
+| `cancelled` | 진행 표식 제거. 신규 건설·폐허 생성 없음 — 이전 거절로 생긴 폐허는 D9대로 영구 보존 | 취소 기록 |
+| `blocked` (+ blocker 의존성 `blockedByIssueIds` 폴링 병행 조회) | 경고 표식, 폐허 없음 | 차단 사유 표시 |
 
-<!-- 2026-07-21 리뷰 반영 — 위 표의 기존 문제점:
-# HIGH: (활성 여행 없음) 행 신설 — 첫 실행·여행 부재 시 bootstrap 응답·화면 미정(Phase 2 첫 화면에서 즉시 부딪힘). 수정 요청 행에 사용 기준 명시(D9). cancelled 행 폐허 보존 명시(기존 '폐허 없음'이 D9 '기존 폐허 불변'과 충돌).
-# M9(기술 타당성): 기존 표는 `backlog/todo/in_progress/in_review/blocked` 등 고정 상태명을 전제했으나, Paperclip 실제 워크플로는 6개 카테고리(Triage/Backlog/Unstarted/Started/Completed/Cancelled) 안에서 팀이 임의 정의하는 커스텀 상태 → `in_review`는 기본 보장 안 되고 설정으로 만들어야 하며, `blocked`는 상태가 아니라 blocker 의존성 관계. 표 키를 카테고리+설정 상태 ID 기준으로 재기술, blocked를 별도 조회 행으로 분리, PlacementAttempt 규칙 1도 '설정된 검수 상태 ID 첫 진입'으로 수정.
-# M3(제품 비전): 작업·승인·거절 행 HUD 칸에 '담당 직원 표기' 병기 — 폐허/건물이 담당자와 시각적으로 연결되게(직원 감각 복원).
+<!-- 2026-07-21 리뷰 반영 + Phase 1 실사(PAPERCLIP-RECON.md)로 정정:
+# HIGH(유지): (활성 여행 없음) 행 신설. 수정 요청 행 사용 기준(D9). cancelled 폐허 보존(D9 '기존 폐허 불변').
+# M3(유지): 작업·승인·거절 행 HUD에 담당 직원 표기 — 직원 감각 복원.
+# M9(실사로 정정·되돌림): M9는 "Paperclip이 6개 카테고리 안 커스텀 상태이므로 in_review 미보장·blocked는 관계"라 가정해 표를 카테고리 기반으로 재작성했으나, 실제 API(2026.720.0)의 이슈 상태 enum은 고정 `backlog/todo/in_progress/in_review/done/blocked/cancelled` → in_review·blocked 모두 1급 상태로 실재. 표를 고정 상태명으로 복원. 단 blocker 의존성(blockedByIssueIds)도 별개로 존재하므로 blocked 상태 + 관계 병행 조회는 유지(M9의 이 통찰만 반영). 규칙 1도 'in_review 첫 진입'으로 복원.
 -->
+
 
 
 **PlacementAttempt 규칙** (멱등성의 핵심):
 
-1. 설정된 검수 상태(예: In Review — Phase 1에서 상태 ID 확인) 첫 진입 시 열린 `PlacementAttempt` 하나를 만든다.
+1. `in_review` 첫 진입 시 열린 `PlacementAttempt` 하나를 만든다.
 2. 반복 폴링·앱 재시작은 같은 시도를 중복 생성하지 않는다.
 3. 거절할 때마다 현재 시도는 폐허가 되고, 다음 검토는 새 부지를 쓴다.
-4. Paperclip 화면에서 검수를 거치지 않고 직접 Completed로 바뀐 업무는 자동으로 건물을 만들지 않고 **조정 필요** 상태로 표시한다 (검수 우회 방지).
+4. Paperclip 화면에서 검수를 거치지 않고 직접 `done`으로 바뀐 업무는 자동으로 건물을 만들지 않고 **조정 필요** 상태로 표시한다 (검수 우회 방지).
 5. 이미 보관된 섬은 수정하지 않는다.
-6. 수정 요청(코멘트)은 열린 `PlacementAttempt`를 닫지 않고 유지한다 — Started 작업 상태로 복귀, 같은 부지 재사용, 재검수 진입 시 기존 시도 재사용 (반려 아님, 폐허 없음). 실제 상태 전이는 Phase 1 실사로 확정.
+6. 수정 요청(approval request-revision)은 열린 `PlacementAttempt`를 닫지 않고 유지한다 — `in_progress` 복귀, 같은 부지 재사용, 재검수(`in_review`) 진입 시 기존 시도 재사용 (반려 아님, 폐허 없음). resubmit은 새 시도가 아니라 같은 시도의 재제출.
 
 <!-- 2026-07-21 LOW 리뷰 반영:
 # L1(내부 일관성): §3.4 '수정 요청' 행이 '공사 중 마커 유지'라 했으나 수정 요청은 검수 중(미리보기 건물) 발생 → 유지할 '공사 중 마커'가 없어 표 내부 모순. 또 수정 요청 후 상태 전이(검수 유지 vs 작업 복귀)가 미정의라 미리보기↔마커 전환 구현이 혼란. 행을 '이벤트'로 명시(M9에서 이미 반영) + 규칙 6으로 전이 확정(작업 복귀·시도 유지·부지 재사용).
@@ -147,7 +147,7 @@ AI 직원이 **할 수 없는** 것: 업무 최종 승인·거절 / 여행 종�
 - 여행 시작 시 Paperclip에 **여행 루트 업무**를 만들고 실제 업무를 그 하위에 둔다.
 - 테마는 여행 시작 때 선택, 도중 변경 불가.
 - 여행 도중 최상위 업무 추가는 언제든 가능하다 (종료 조건은 아래 done/cancelled 규칙 그대로).
-- 모든 최상위 업무가 Completed 또는 Cancelled 카테고리일 때만 종료 가능.
+- 모든 최상위 업무가 `done` 또는 `cancelled`일 때만 종료 가능.
 - 재작업을 포기한 거절 업무는 사용자가 `cancelled`로 전환해 여행을 종료할 수 있다. 취소 업무는 점수 0이며, 해당 업무의 폐허는 종료 스냅샷에 포함된다.
 - 종료 시 제목·담당자·점수·건물·폐허·피드백·증거 링크를 **불변 스냅샷**으로 저장한다.
 - **구현 시점**: 여행 시작(루트 업무 생성 + `POST /api/trips`)은 Phase 2부터, 종료·보관은 Phase 4부터 구현한다. Phase 2~3의 최상위 업무는 base 고정 여행의 루트 아래에 배치된다.
@@ -170,19 +170,19 @@ AI 직원이 **할 수 없는** 것: 업무 최종 승인·거절 / 여행 종�
 
 브라우저 ↔ Paperclip(localhost:3100) 사이의 얇은 로컬 계층. 별도 프로세스 없이 Vite dev 서버 플러그인으로 구현한다.
 
-> ⚠️ **아래 계약은 Phase 1 실사 전 가설 계약**이다. 특히 `/review`는 Paperclip 승인 API 확인 결과에 따라 '상태 전이 API + 코멘트 API 조합'으로 대체될 수 있다 (§10 항목 1).
+> ✅ **Phase 1 실사로 확정** (PAPERCLIP-RECON.md). `/review`의 approve/reject/request_changes는 Paperclip 네이티브 approval(`POST /api/approvals/{id}/approve|reject|request-revision`, `decisionNote`)로, 재작업 재제출은 `resubmit`로 매핑. 트러스트 로컬 loopback에서 브리지는 Board(인간) 권한으로 호출한다(별도 키 불요; 비-신뢰 배포 시 BoardApiKey).
 
 - `GET  /api/bootstrap` — 활성 여행·업무·직원·캐시 상태 (활성 여행 없으면 `trip: null` + 보관 목록만 반환)
 - `POST /api/trips` — 여행 시작
 - `POST /api/tasks` — 최상위 업무 생성 (활성 여행 없으면 409)
-- `POST /api/tasks/:id/review` — 검수 결정 `approve | reject | request_changes` (**idempotency key 필수**). `request_changes`는 Paperclip 코멘트로 전달 — 반려 아님 (D9)
+- `POST /api/tasks/:id/review` — 검수 결정 `approve | reject | request_changes` (**idempotency key 필수**) → Paperclip approval `approve`/`reject`/`request-revision` 호출. `request_changes`는 반려 아님 (D9). 재작업 재제출은 approval `resubmit`
 - `POST /api/tasks/:id/cancel` — 업무 취소 (§3.5 종료 조건의 `cancelled` 전이 대응, idempotency key 적용)
 - `POST /api/trips/:id/archive` — 여행 종료·스냅샷 저장
 
 <!-- 2026-07-21 리뷰 반영 — 기존 문제점:
 # HIGH#5: review가 "승인/거절" 2종뿐이라 D9의 '수정 요청(코멘트)' 흐름을 주 화면(D6)에서 수행할 경로가 없었음 → request_changes로 확장. bootstrap/tasks는 활성 여행 없음 상태의 동작이 미정이었음.
 # M2(내부 일관성): §3.5 종료에 필요한 cancelled 전이를 인게임(D6)에서 수행할 라우트가 없어 여행 종료가 인게임에서 완결 안 됨 → /cancel 추가. (M2가 함께 제안한 /comment 엔드포인트는 HIGH#5의 request_changes가 이미 커버하므로 별도 생성하지 않음 — 중복 회피.)
-# M10(기술 타당성): PRODUCT.md는 'review/approval handoffs' 존재만 언급하고 TASKS.md에 승인/거절 API가 문서화되어 있지 않음 → 인간 권한으로 외부 클라이언트가 승인/거절하는 API 존재 여부·권한 모델이 미확인인데 확정 어조로 기술됨. '가설 계약' 경고 + §10·Phase 1 체크포인트에서 판가름.
+# M10(기술 타당성) → ✅ 실사 해소: 네이티브 approval API(approve/reject/request-revision/resubmit) 실재, 트러스트 로컬 loopback = Board(인간) 권한으로 승인 가능. 인간 vs 에이전트 권한이 securitySchemes(BoardApiKey vs AgentBearer)로 분리. 폴백(상태전이+코멘트) 불필요.
 -->
 
 
@@ -266,9 +266,9 @@ Voxel-Diorama/
 1. 실행 중 프로세스·기본 데이터 디렉터리·`PAPERCLIP_HOME` 재확인. 사용자 데이터 발견 시 **삭제하지 않고 백업 후 중단·보고**.
 2. 최신 안정 태그로 로컬 신뢰 모드 설치, 버전 기록.
 3. Technical Director·Developer 두 역할만 재고용 (승인 권한은 인간에게만).
-4. API 실사: 카테고리·커스텀 상태·blocker 의존성 관계 API 실사 및 검수용 상태 보장 로직 검증 + **§3.4 매핑 표를 실제 상태 ID로 확정**. 우선순위 필드 실제 값(Urgent/High/Medium/Low/No priority) 확인 포함 (D10). 인간 권한(사용자 key vs 에이전트 key)으로 외부 클라이언트가 승인/거절·반려 피드백을 기록하는 API 존재 여부·권한 모델 확정 (§10 항목 1). 수정 요청(코멘트) 시 실제 상태 전이 확인 후 §3.4 '수정 요청' 행·규칙 6 확정 (L1). 예산 설정·soft alert·hard ceiling(초과 시 자동 일시정지) 동작 및 기간·단위 지원 범위 확인 (L3). **실제 API 응답을 fixture로 저장해 이후 §3.4 투영 테스트 입력으로 사용** (Codex 채택 — 실측 응답 기반 회귀 테스트).
+4. **API 실사 — ✅ 완료 (2026-07-21, PAPERCLIP-RECON.md + paperclip-recon/fixtures/)**. 확정: 이슈 상태 고정 enum `backlog/todo/in_progress/in_review/done/blocked/cancelled`(§3.4) · 우선순위 `critical/high/medium/low`(선택, D10) · 검수는 네이티브 approve/reject/request-revision/resubmit · 트러스트 로컬 loopback = Board(인간) 권한(승인 가능, M10 해소) · 고용 `agent-hires`(Developer=engineer, TD=pm/cto) · 예산 `budgetMonthlyCents`+정책+인시던트(L3 해소) · blocker `blockedByIssueIds` 별도 조회 · 비용 `/issues/:id/cost-summary`. openapi.json·주요 스키마 fixture 저장. **남은 라이브 검증은 아래 체크포인트.**
 5. **구현 발주 게이트**: 이 시점부터 Phase 2~5의 각 항목을 Paperclip 최상위 업무로 분해·발주해 Technical Director가 배정하고 Developer가 수행한다 — 첫 스프린트 섬 = 이 게임을 만드는 과정 자체(도그푸딩). Phase 2 새 화면 완성 전까지의 발주·검수는 Paperclip 기본 UI로 수행한다 (Phase 2.3과 연결).
-- ✅ 체크포인트: 실제 업무 1개를 생성·배정할 수 있고, 비용·실행 시간이 조회되며, AI에게 승인 권한이 없다. 거절 피드백 제출 → 에이전트가 재시도를 시작하는 경로를 확인한다 (자동 재배정인지 TD 넛지 필요인지 기록). **브리지(또는 curl 등 외부 클라이언트) 경유로 승인 1회·거절+반려 피드백 1회가 Paperclip에 실제 반영됨을 확인** — 여기서 D6(주 화면 전환) 성립 여부가 판가름 난다.
+- ✅ 체크포인트: **API 계약 실사 완료**(PAPERCLIP-RECON.md). 남은 라이브 검증 — 실제 업무 1개를 생성·배정할 수 있고, 비용·실행 시간이 조회되며, AI에게 승인 권한이 없다. 거절 피드백 제출 → 에이전트가 재시도를 시작하는 경로를 확인한다 (자동 재배정인지 TD 넛지 필요인지 기록). **브리지(또는 curl 등 외부 클라이언트) 경유로 승인 1회·거절+반려 피드백 1회가 Paperclip에 실제 반영됨을 확인** — 여기서 D6(주 화면 전환) 성립 여부가 판가름 난다.
 
 <!-- 2026-07-21 MEDIUM 리뷰 반영 (Phase 1):
 # M7(통합 충실도): v0.2의 '0.4 구현 발주 게이트'(구현 Phase를 Paperclip 티켓으로 분해·발주 = 도그푸딩)가 로드맵에서 소실 → 개발 체제가 "나+AI 워크포스"인데 발주 절차·시점이 없었음. 5번으로 복원. (닭-달걀 문제는 Phase 2.3이 이미 답함.)
@@ -344,7 +344,7 @@ Voxel-Diorama/
 
 | 리스크 | 대응 |
 |---|---|
-| Paperclip API 계약 미실측 (**카테고리·커스텀 상태·blocker 관계 모델**·웹훅·인증·거절→재작업 트리거·**인간 권한 승인/거절 API 존재·권한 모델**) | Phase 1 실사에서 매핑 표 확정 + 브리지 경유 승인/거절 실증. 전용 승인 API 부재 시 상태 전이+코멘트 조합 폴백. 폴링 폴백 항상 유효 |
+| Paperclip API 계약 (상태·우선순위·승인·인증·예산) — ✅ Phase 1 실사 확정 (PAPERCLIP-RECON.md). 남은 미확정: 웹훅 유무·거절→재작업 자동 여부 | 고정 상태 enum·네이티브 approval·Board 권한 확인. 라이브 승인/거절 실증은 Phase 1 체크포인트. 폴링 폴백 항상 유효 |
 | `~/.paperclip` 잔존 데이터 | 백업 우선 절차 (Phase 1.1) — 발견 시 중단·보고 |
 | Astryx beta API 변동 · React 19/R3F v9 강결합 | 정확 버전 pin + 토큰 계약 자체 소유 → CSS 변수 폴백. 스택 교체 시 연쇄 영향 함께 기록 |
 | 에이전트 산출물 품질 | 인간 전용 검수 + 증거 패널 + "반려=영구 폐허" 규칙 |
@@ -368,7 +368,7 @@ Voxel-Diorama/
 
 ## 10. 남은 열린 항목
 
-1. **Paperclip 실제 상태 카테고리·커스텀 상태·API 필드 + 인간 권한 승인/거절 API** — 외부 클라이언트(브리지)가 인간 권한으로 특정 업무를 승인/거절하고 반려 피드백을 기록할 수 있는 API 존재 여부·권한 모델(사용자 key vs 에이전트 key)을 Phase 1 실사로 확정. 전용 승인 API가 없으면 폴백: 브리지가 상태 전이 API + 코멘트 API 조합으로 승인(→Completed)/거절(→Unstarted + 반려 사유 코멘트)을 표현하고 §3.4 매핑을 그에 맞게 갱신 (M9·M10).
+1. **Paperclip 상태·승인·인증** — ✅ Phase 1 실사 확정 (PAPERCLIP-RECON.md): 고정 상태 enum(§3.4), 네이티브 approval(approve/reject/request-revision/resubmit), 트러스트 로컬 loopback = Board(인간) 권한. 남은 것: 웹훅 실시간 유무·거절→재작업 자동 트리거 여부(폴링 폴백은 항상 유효)·LLM 어댑터 설정.
 2. **`plan/japanese-temple-voxels` 최종 처분** — ✅ 폐기 확정 (2026-07-21 사용자 결정). Phase 0에서 로컬+원격 삭제 실행(명령 확인 후). `stash@{0}`은 보존.
 3. **프로젝트↔국가 1:1 관례** — v1.1 KR 테마 추가 전까지 실사용 경험으로 판단.
 
