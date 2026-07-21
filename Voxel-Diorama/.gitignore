@@ -1,0 +1,4 @@
+# Kenney 원본 아카이브 + 추출본 — git 미커밋 (ASSETS.md URL·버전으로 재현).
+# 커밋할 GLB 서브셋은 Phase 3에서 확정.
+assets/**/*.zip
+assets/common/kenney/kenney_*/
