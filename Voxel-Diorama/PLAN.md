@@ -42,7 +42,7 @@
 | D9 | 반려 규칙 | 반려 = 해당 시도의 **영구 폐허**. 재작업 재제출 = 새 시도(Attempt)·새 부지, 기존 폐허 불변. 수정 요청(코멘트) ≠ 반려 — 단, **§3.2 완료 조건 중 하나라도 미충족이면 반드시 반려로 처리**하고, 수정 요청은 완료 조건을 모두 충족한 결과물의 마이너 조정에만 허용. 한 업무에 폐허 여러 개 가능, 완성 건물은 최대 1개 |
 | D10 | 점수 | **고정 점수만**: Low 15 · Medium 30 · High 45 · **Critical 60** (Paperclip 우선순위 `critical/high/medium/low`에서 자동 도출 — Phase 1 실사 확정, 점수 직접 입력 없음. priority는 null 가능하므로 **발주 창에서 우선순위 선택 필수 — No priority 금지**). 섬별 + 평생 누적 표시. 점수 소비 경제 없음. 효율 보너스는 v1.1 백로그(§9)에 공식 보존 |
 | D11 | 테마 순서 | **`base` 테마(Kenney)로 루프 먼저 완성 → `jp-kyoto` 버티컬 슬라이스**. 한 여행 = 고정 테마 1개(도중 변경 불가). 테마 미보유 자산 역할은 base로 fallback |
-| D12 | AI 조직 | **의사결정 다양성 원칙**: 시니어급 판단을 한 모델에 몰지 않고 Claude/Codex 두 독립 계통으로 둔다. **Claude팀**(`claude_local`): Senior Developer(개발+시니어 판단) · Doc Writer(개발/플랜 문서, 저토큰). **Codex팀**(`codex_local`): Design & Planning Lead(분해·배정·넛지·리캡+UI/UX 방향+기획, Claude와 독립된 관점) · QA & Test Engineer · Doc Writer(디자인/기획 문서, 저토큰). 문서 작성 사원은 저토큰 모델. **조직도**: 두 팀장(Senior Developer·Design & Planning Lead)은 CEO 직속 독립, 팀원(각 Doc Writer·QA)은 팀장에게 `reportsTo`(조율만, 결정권은 인간 전용 D4). 전담 UI/UX 디자이너·VoxelArtist는 필요 시(교토 Phase 5) 추가 검토. 어댑터별 role·보고 구조는 PAPERCLIP-RECON.md 워크포스 표 참조 |
+| D12 | AI 조직 | **의사결정 다양성 원칙**: 시니어급 판단을 한 모델에 몰지 않고 Claude/Codex 두 독립 계통으로 둔다. **Claude팀**(`claude_local`): Senior Developer(개발+시니어 판단) · Doc Writer(개발/플랜 문서, 저토큰). **Codex팀**(`codex_local`): Design & Planning Lead(분해·배정·넛지·리캡+UI/UX 방향+기획, Claude와 독립된 관점) · QA & Test Engineer · Doc Writer(디자인/기획 문서, 저토큰). 문서 작성 사원은 저토큰 모델. **조직도**: 두 팀장(Senior Developer·Design & Planning Lead)은 CEO 직속 독립, 팀원(각 Doc Writer·QA)은 팀장에게 `reportsTo`(조율만, 결정권은 인간 전용 D4). **v0.1은 활성 3명(두 리드+QA)만 가동, Developer·Doc Writer는 pause 대기 — 단계적 활성화 정책·트리거는 §3.1 참고.** 전담 UI/UX 디자이너·VoxelArtist는 필요 시(교토 Phase 5) 추가 고용. 어댑터별 role·보고 구조는 PAPERCLIP-RECON.md 워크포스 표 참조 |
 | D13 | 브리지 | 별도 Node 앱 대신 **Vite 서버 미들웨어**로 구현 — 단일 프로세스로 Codex 요구사항(127.0.0.1 전용, 자격 증명 서버 측 보관, idempotency, 파일 원자적 쓰기) 전부 충족. 커지면 그때 분리 |
 | D14 | 기존 사찰 묵업 | `plan/japanese-temple-voxels` 브랜치의 코드·PNG·복셀 모델은 **v0.1에 반입 금지** (새 파이프라인 무결성). **브랜치는 폐기 확정** (2026-07-21 사용자 결정, Codex·Gemini 최종안 일치) — 로컬+원격 삭제, main 기준 25커밋 폐기. 단 `stash@{0}`은 별도 내용이 섞여 있어 보존. 실제 삭제는 Phase 0에서 실행(되돌리기 어려워 실행 직전 확인). **반입 금지는 코드·PNG·복셀 모델에 한정** — 기존 아트 바이블 등 텍스트 문서는 검토 후 계승 가능 (M8) |
 | D15 | 카메라 | 고정 아이소메트릭 + 이동·확대/축소만. 로비 행성은 스핀·선택만 |
@@ -60,12 +60,14 @@ D12 기존: "초기 2명(TD+Developer), VoxelArtist는 Phase 5". 변경(2026-07-
 나 — CEO / 최종 검수자 (승인·거절·여행 종료 유일 권한)
 │
 ├─ Paperclip — AI 직원·업무·예산·실행·감사 단일 원본 (승인 권한 없음)
-│    │  ※ 팀장 2명은 CEO 직속 독립 시니어(의사결정 다양성) · 팀원은 팀장에게 보고(조율만, 결정권 아님)
-│    ├─ Senior Developer (Claude, 팀장 — 개발·시니어 판단)
-│    │    └─ Doc Writer (Claude — 개발/플랜 문서, 저토큰)
-│    └─ Design & Planning Lead (Codex, 팀장 — 분해·배정·기획·UI/UX, Claude와 다른 관점)
-│         ├─ QA & Test Engineer (Codex)
-│         └─ Doc Writer (Codex — 디자인/기획 문서, 저토큰)
+│    │  ※ 팀장 2명은 CEO 직속 독립 시니어(다양성) · 팀원은 팀장에게 보고(조율만, 결정권 아님)
+│    │  ※ v0.1은 활성 3명(●)만 가동 · 나머지(○)는 성장 트리거 시 활성화 — §3.1 참고
+│    ├─ ● Engineering Lead (Claude — 아키텍처·기술 방향, v0.1 구현 겸임)
+│    │    ├─ ○ Developer (Claude — 구현)
+│    │    └─ ○ Doc Writer (Claude — 개발/플랜 문서, 저토큰)
+│    └─ ● Product & Design Lead (Codex — 기획·UX·분해·배정, Claude와 다른 관점)
+│         ├─ ● QA Engineer (Codex — 검증·증거, 교차 모델 체크)
+│         └─ ○ Doc Writer (Codex — 디자인/기획 문서, 저토큰)
 │
 └─ Voxel-Diorama — 주 운영 화면 (본 프로젝트)
      ├─ Astryx 2D HUD: 발주 창·리뷰 큐·에이전트 패널·여행기
@@ -94,6 +96,17 @@ AI 직원이 **할 수 없는** 것: 업무 최종 승인·거절 / 여행 종�
 <!-- 2026-07-21 MEDIUM 리뷰 반영:
 # M3(제품 비전): 고용은 Phase 1의 Paperclip 관리 화면으로만 처리되고 에이전트 패널이 무엇을 보여주는지 명세가 없었음 → 폐허·건물이 담당 직원과 연결되지 않으면 AI가 '직원'이 아니라 익명 배치 파이프라인이 되어 비전 (c)('직원처럼 고용') 감각이 증발. 이름·기록·책임을 지면에 부여(패널 명세 + §3.4 표 담당자 표기 + §9 여행기 서사). 스코프 제로 — 기존 PlacementAttempt 집계 재사용.
 -->
+
+> **📌 참고 — 단계적 인력 활성화 (staffing 정책)**
+>
+> 목표 조직(D12)은 전부 세우되, **v0.1은 활성 3명**(Engineering Lead · Product & Design Lead · QA Engineer)만 가동하고 나머지는 Paperclip `pause`로 대기시킨다. 검증 안 된 워크로드에 미리 인력을 늘리지 않는다(YAGNI). 성장 트리거가 오면 하나씩 활성화(Doc Writer는 저토큰 모델로):
+>
+> | 활성화 대상 | 트리거 |
+> |---|---|
+> | Developer (Claude) | 구현 업무가 Engineering Lead 1인으로 안 돌아갈 때(병렬 업무 발생) |
+> | Doc Writer (Claude/Codex, 저토큰) | 문서 유지보수가 리드·개발자 시간을 실제로 잡아먹기 시작할 때 |
+> | 전담 UI/UX 디자이너 (신규 고용) | 교토 테마(Phase 5) 또는 HUD 디자인이 병목이 될 때 |
+> | VoxelArtist (신규 고용) | 교토 복셀 에셋 신규 제작 시 (D12) |
 
 ### 3.2 업무 명세 (최상위 업무 필수 필드)
 

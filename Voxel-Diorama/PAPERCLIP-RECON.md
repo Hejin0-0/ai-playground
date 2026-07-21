@@ -85,13 +85,16 @@ securitySchemes 3종: `BoardSessionAuth`(세션 쿠키) · `BoardApiKeyAuth`(인
 
 회사 Voxel-Diorama(`edcdbd03…`) · 프로젝트 "Voxel-Diorama v0.1". **의사결정 다양성 원칙** — 한 모델 판단에만 회사 방향을 맡기지 않도록 Claude/Codex 시니어를 독립적으로 둠. 문서 작성은 저토큰 모델 전담 사원에게.
 
-| 팀 | 사원(name) | title | role | 책임 |
-|---|---|---|---|---|
-| **Claude** (`claude_local`) | ThreeJSDev | Senior Developer | engineer | R3F/TS 개발 + 시니어 개발 판단 |
-| **Claude** | DocWriter-Claude | Doc Writer (Claude) | general | 시니어 개발자 관점 개발/플랜 문서 (저토큰) |
-| **Codex** (`codex_local`) | Technical Director | Design & Planning Lead | pm | 분해·배정·넛지·리캡 + UI/UX 방향 + 기획, Claude와 독립된 다른 관점 |
-| **Codex** | CodexQA | QA & Test Engineer | qa | QA·테스트·증거 검토 |
-| **Codex** | DocWriter-Codex | Doc Writer (Codex) | general | 디자이너·기획 관점 문서 (저토큰) |
+| 팀 | 사원(name) | title | role | 상태 | 책임 |
+|---|---|---|---|---|---|
+| **Claude** (`claude_local`) | ThreeJSDev | Engineering Lead | engineer | 🟢 활성 | 아키텍처·기술 방향 + v0.1 구현 겸임 |
+| **Claude** | Developer | Developer | engineer | ⏸ 대기 | 구현 (Eng Lead 산하) — 병렬 업무 시 활성화 |
+| **Claude** | DocWriter-Claude | Doc Writer (Claude) | general | ⏸ 대기 | 개발/플랜 문서 (저토큰) |
+| **Codex** (`codex_local`) | Technical Director | Product & Design Lead | pm | 🟢 활성 | 기획·UX + 분해·배정, Claude와 독립된 관점 |
+| **Codex** | CodexQA | QA Engineer | qa | 🟢 활성 | 검증·증거 (교차 모델 체크) |
+| **Codex** | DocWriter-Codex | Doc Writer (Codex) | general | ⏸ 대기 | 디자인/기획 문서 (저토큰) |
+
+> **v0.1 활성 3명**(두 리드+QA)만 가동, 나머지는 `pause`. 단계적 활성화 트리거는 PLAN.md §3.1 참고. 목표 조직·설계 근거는 §2 지휘 체계·D12.
 
 내장 Reflection Coach·Summarizer(`claude_local`, paused).
 
