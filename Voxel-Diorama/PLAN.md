@@ -13,7 +13,7 @@
 다음 흐름을 **실제 Voxel-Diorama 개발 업무**로 한 번 이상 완주해야 한다 (도그푸딩 내장 → Phase 1 구현 발주 게이트):
 
 1. 여행을 시작하고 개발 업무를 생성한다.
-2. Technical Director가 업무를 분해하고 Developer(ThreeJSDev)가 수행한다.
+2. Design & Planning Lead가 업무를 분해하고 Senior Developer가 수행한다.
 3. 사용자가 결과물과 테스트 증거를 검수한다.
 4. 첫 시도를 거절하면 해당 부지에 영구 폐허가 남는다.
 5. 재작업을 승인하면 새 부지에 완성 건물이 세워진다.
@@ -42,7 +42,7 @@
 | D9 | 반려 규칙 | 반려 = 해당 시도의 **영구 폐허**. 재작업 재제출 = 새 시도(Attempt)·새 부지, 기존 폐허 불변. 수정 요청(코멘트) ≠ 반려 — 단, **§3.2 완료 조건 중 하나라도 미충족이면 반드시 반려로 처리**하고, 수정 요청은 완료 조건을 모두 충족한 결과물의 마이너 조정에만 허용. 한 업무에 폐허 여러 개 가능, 완성 건물은 최대 1개 |
 | D10 | 점수 | **고정 점수만**: Low 15 · Medium 30 · High 45 · **Critical 60** (Paperclip 우선순위 `critical/high/medium/low`에서 자동 도출 — Phase 1 실사 확정, 점수 직접 입력 없음. priority는 null 가능하므로 **발주 창에서 우선순위 선택 필수 — No priority 금지**). 섬별 + 평생 누적 표시. 점수 소비 경제 없음. 효율 보너스는 v1.1 백로그(§9)에 공식 보존 |
 | D11 | 테마 순서 | **`base` 테마(Kenney)로 루프 먼저 완성 → `jp-kyoto` 버티컬 슬라이스**. 한 여행 = 고정 테마 1개(도중 변경 불가). 테마 미보유 자산 역할은 base로 fallback |
-| D12 | AI 조직 | 초기 2명: Technical Director(분해·배정) + Developer/ThreeJSDev(구현·테스트·증거 제출). VoxelArtist 고용은 Phase 5(교토 테마 제작) 시점에 검토 |
+| D12 | AI 조직 | **의사결정 다양성 원칙**: 시니어급 판단을 한 모델에 몰지 않고 Claude/Codex 두 독립 계통으로 둔다. **Claude팀**(`claude_local`): Senior Developer(개발+시니어 판단) · Doc Writer(개발/플랜 문서, 저토큰). **Codex팀**(`codex_local`): Design & Planning Lead(분해·배정·넛지·리캡+UI/UX 방향+기획, Claude와 독립된 관점) · QA & Test Engineer · Doc Writer(디자인/기획 문서, 저토큰). 문서 작성 사원은 저토큰 모델. 전담 UI/UX 디자이너·VoxelArtist는 필요 시(교토 Phase 5) 추가 검토. 어댑터별 role은 PAPERCLIP-RECON.md 워크포스 표 참조 |
 | D13 | 브리지 | 별도 Node 앱 대신 **Vite 서버 미들웨어**로 구현 — 단일 프로세스로 Codex 요구사항(127.0.0.1 전용, 자격 증명 서버 측 보관, idempotency, 파일 원자적 쓰기) 전부 충족. 커지면 그때 분리 |
 | D14 | 기존 사찰 묵업 | `plan/japanese-temple-voxels` 브랜치의 코드·PNG·복셀 모델은 **v0.1에 반입 금지** (새 파이프라인 무결성). **브랜치는 폐기 확정** (2026-07-21 사용자 결정, Codex·Gemini 최종안 일치) — 로컬+원격 삭제, main 기준 25커밋 폐기. 단 `stash@{0}`은 별도 내용이 섞여 있어 보존. 실제 삭제는 Phase 0에서 실행(되돌리기 어려워 실행 직전 확인). **반입 금지는 코드·PNG·복셀 모델에 한정** — 기존 아트 바이블 등 텍스트 문서는 검토 후 계승 가능 (M8) |
 | D15 | 카메라 | 고정 아이소메트릭 + 이동·확대/축소만. 로비 행성은 스핀·선택만 |
@@ -51,6 +51,7 @@
 D3 기존: "행성 로비 → 국가 테마 → 여행별 새 섬"까지만. 문제: L3 잠금 결정(행성→국가→스프린트 군도)의 국가 계층이 삭제인지 이연인지 판단 불가, ThemeManifest anchor 필드도 소실 → 구조 유지 + v1.1 이연으로 확정.
 D9 기존: "수정 요청(코멘트) ≠ 반려"에 사용 기준·경계 없음. 문제: 손실 회피 심리상 폐허를 피하려 수정 요청만 쓰게 되어 '반려=영구 폐허' 긴장감이 실전에서 발동하지 않음 → 완료 조건 미충족 = 강제 반려 경계 추가.
 D10 이력: 리뷰(미검증 판정)가 "실제 스케일은 Urgent/High/Medium/Low + No priority"라 주장해 한때 Urgent로 바꿨으나, **Phase 1 실사(2026.720.0)에서 실제 enum은 `critical/high/medium/low`로 확인 → Critical 복원**. priority가 null 가능한 점만 실사와 일치하므로 "발주 시 선택 필수(No priority 금지)"는 우리 앱 강제 규칙으로 유지. (교훈: 실사 전 문서 인용 기반 지적은 실측으로 뒤집힐 수 있음.)
+D12 기존: "초기 2명(TD+Developer), VoxelArtist는 Phase 5". 변경(2026-07-21 사용자 지시): 단일 모델(Claude) 판단에만 회사 방향을 맡기는 위험을 피하려 Claude/Codex 시니어 2계통 + 저토큰 문서 사원 구조로 확장. Claude=Senior Developer, Codex=Design & Planning Lead(구 TD 진화, 분해·배정·기획·UI/UX)+QA. 문서는 저토큰 전담 사원 2명(Claude/Codex 관점). 실제 워크포스는 Paperclip에 구성 완료(PAPERCLIP-RECON.md).
 -->
 
 지휘 체계:
@@ -58,9 +59,9 @@ D10 이력: 리뷰(미검증 판정)가 "실제 스케일은 Urgent/High/Medium/
 ```
 나 — CEO / 최종 검수자 (승인·거절·여행 종료 유일 권한)
 │
-├─ Paperclip — AI 직원·업무·예산·실행·감사 단일 원본
-│    ├─ Technical Director  (분해·배정·넛지·리캡 — 승인 권한 없음)
-│    └─ Developer(ThreeJSDev) (구현·테스트·증거 제출)
+├─ Paperclip — AI 직원·업무·예산·실행·감사 단일 원본 (승인 권한 없음)
+│    ├─ Claude팀 — Senior Developer(개발·시니어 판단) · Doc Writer(문서, 저토큰)
+│    └─ Codex팀 — Design & Planning Lead(분해·배정·기획·UI/UX, 다른 관점) · QA · Doc Writer(문서, 저토큰)
 │
 └─ Voxel-Diorama — 주 운영 화면 (본 프로젝트)
      ├─ Astryx 2D HUD: 발주 창·리뷰 큐·에이전트 패널·여행기
@@ -75,9 +76,9 @@ D10 이력: 리뷰(미검증 판정)가 "실제 스케일은 Urgent/High/Medium/
 
 AI 직원이 **할 수 없는** 것: 업무 최종 승인·거절 / 여행 종료·섬 보관 / 예산 변경 / 사용자 피드백 삭제 / 완료 기록·폐허 삭제.
 
-- TD가 만든 하위 업무는 실행 구조로만 사용한다. **건물과 점수는 여행 루트 바로 아래의 최상위 결과물 업무에만** 부여해 비용·점수 중복 집계를 막는다.
-- Quartermaster 규범 (task-arcade 계승): TD가 넛지·스탠드업·리캡을 담당하되 검수에는 관여하지 않는다.
-- 거절 피드백 제출 후 에이전트가 자동으로 재시도하지 않으면 TD가 해당 피드백을 인용해 넛지하여 재작업을 시작시킨다 — 자동 여부는 Phase 1 실사에서 확정.
+- Design & Planning Lead가 만든 하위 업무는 실행 구조로만 사용한다. **건물과 점수는 여행 루트 바로 아래의 최상위 결과물 업무에만** 부여해 비용·점수 중복 집계를 막는다.
+- Quartermaster 규범 (task-arcade 계승): Design & Planning Lead가 넛지·스탠드업·리캡을 담당하되 검수에는 관여하지 않는다.
+- 거절 피드백 제출 후 에이전트가 자동으로 재시도하지 않으면 Design & Planning Lead가 해당 피드백을 인용해 넛지하여 재작업을 시작시킨다 — 자동 여부는 Phase 1 실사에서 확정.
 - 에이전트별 예산은 Paperclip 내장 기능을 사용한다 (월 단위·토큰 단위 지원 여부는 Phase 1 실사로 확정, 미지원 시 기간·단위는 실제 지원 범위에 맞춰 조정).
 
 <!-- 2026-07-21 LOW 리뷰 반영:
@@ -265,9 +266,9 @@ Voxel-Diorama/
 ### Phase 1 — Paperclip 안전 재설치·실사
 1. 실행 중 프로세스·기본 데이터 디렉터리·`PAPERCLIP_HOME` 재확인. 사용자 데이터 발견 시 **삭제하지 않고 백업 후 중단·보고**.
 2. 최신 안정 태그로 로컬 신뢰 모드 설치, 버전 기록.
-3. Technical Director·Developer 두 역할만 재고용 (승인 권한은 인간에게만).
+3. D12 워크포스 고용 (Claude팀·Codex팀). 승인 권한은 인간에게만. 문서 작성 사원은 저토큰 모델로 지정(LLM 자격 설정 시 확정).
 4. **API 실사 — ✅ 완료 (2026-07-21, PAPERCLIP-RECON.md + paperclip-recon/fixtures/)**. 확정: 이슈 상태 고정 enum `backlog/todo/in_progress/in_review/done/blocked/cancelled`(§3.4) · 우선순위 `critical/high/medium/low`(선택, D10) · 검수는 네이티브 approve/reject/request-revision/resubmit · 트러스트 로컬 loopback = Board(인간) 권한(승인 가능, M10 해소) · 고용 `agent-hires`(Developer=engineer, TD=pm/cto) · 예산 `budgetMonthlyCents`+정책+인시던트(L3 해소) · blocker `blockedByIssueIds` 별도 조회 · 비용 `/issues/:id/cost-summary`. openapi.json·주요 스키마 fixture 저장. **남은 라이브 검증은 아래 체크포인트.**
-5. **구현 발주 게이트**: 이 시점부터 Phase 2~5의 각 항목을 Paperclip 최상위 업무로 분해·발주해 Technical Director가 배정하고 Developer가 수행한다 — 첫 스프린트 섬 = 이 게임을 만드는 과정 자체(도그푸딩). Phase 2 새 화면 완성 전까지의 발주·검수는 Paperclip 기본 UI로 수행한다 (Phase 2.3과 연결).
+5. **구현 발주 게이트**: 이 시점부터 Phase 2~5의 각 항목을 Paperclip 최상위 업무로 분해·발주해 Design & Planning Lead가 배정하고 Senior Developer가 수행한다 — 첫 스프린트 섬 = 이 게임을 만드는 과정 자체(도그푸딩). Phase 2 새 화면 완성 전까지의 발주·검수는 Paperclip 기본 UI로 수행한다 (Phase 2.3과 연결).
 - ✅ 체크포인트: **API 계약 실사 완료**(PAPERCLIP-RECON.md). 남은 라이브 검증 — 실제 업무 1개를 생성·배정할 수 있고, 비용·실행 시간이 조회되며, AI에게 승인 권한이 없다. 거절 피드백 제출 → 에이전트가 재시도를 시작하는 경로를 확인한다 (자동 재배정인지 TD 넛지 필요인지 기록). **브리지(또는 curl 등 외부 클라이언트) 경유로 승인 1회·거절+반려 피드백 1회가 Paperclip에 실제 반영됨을 확인** — 여기서 D6(주 화면 전환) 성립 여부가 판가름 난다.
 
 <!-- 2026-07-21 MEDIUM 리뷰 반영 (Phase 1):
