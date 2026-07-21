@@ -57,6 +57,29 @@ securitySchemes 3종: `BoardSessionAuth`(세션 쿠키) · `BoardApiKeyAuth`(인
 4. **§4.2**: 브리지 `/review`를 네이티브 approve/reject/request-revision/resubmit로 매핑. 트러스트 로컬 loopback = Board 권한.
 5. **§8·§10**: M9(커스텀 상태 리스크)·M10(승인 API 존재)·L3(예산) **실사로 해소** 표기.
 
-## 남은 라이브 체크포인트 (Phase 1 완료 조건)
+## 라이브 검증 결과 (2026-07-21, 쓰기 실측)
 
-계약은 확정됐으나 아직 **쓰기(write) 미실행**. 남은 것: 회사→프로젝트→에이전트(TD·Developer) 생성 → 이슈 1개 발주 → 승인 1회·거절+반려 1회를 실제 반영해 §3.4를 라이브로 검증 (LLM 없이 상태/승인 전이만으로 가능, 실제 에이전트 코딩은 LLM 설정 후).
+브리지가 할 동작을 curl(Board 권한)로 실행해 확정:
+
+| 검증 | 결과 |
+|---|---|
+| 회사 생성 `POST /api/companies` | ✅ Voxel-Diorama (prefix VOX, budgetMonthlyCents 반영, 신규 에이전트 승인 불요) |
+| 프로젝트 생성 | ✅ "Voxel-Diorama v0.1" |
+| 고용 `agent-hires` | ✅ TD(role pm)·ThreeJSDev(role engineer) |
+| 이슈 발주 | ✅ VOX-1 (status/priority/assignee/project) |
+| **멱등성 키** | ✅ 같은 `idempotencyKey` 재요청 → **동일 이슈 반환(중복 생성 없음)** |
+| **§3.4 상태 전이 6종** | ✅ `in_progress·in_review·done·todo·blocked·cancelled` 전부 PATCH 200 |
+| 코멘트 | ✅ `POST /api/issues/:id/comments` 201 |
+| 비용 요약(증거 패널 §3.3) | ✅ `cost-summary` = {costCents, inputTokens, outputTokens, runCount, runtimeMs} |
+| **승인 액션** | ✅ approve→`approved` · reject→`rejected` · request-revision→`revision_requested`, 모두 `decidedByUserId=local-board`(인간) |
+
+**작업 검수 승인 객체는 단순 상태 전이로는 자동 생성되지 않음** — 에이전트가 작업을 제출할 때 생성된다(= LLM 필요). 승인 **액션 엔드포인트** 자체는 governance 승인으로 검증 완료(브리지가 호출할 동일 경로).
+
+### Phase 1 완료까지 남은 것 (LLM 의존)
+
+- LLM 어댑터 미설정 → 이슈 배정 시 에이전트가 자동 실행을 시도하다 `error`(예상됨). **실제 에이전트 코딩 + 작업 검수 승인 생성은 LLM 설정 후** 가능. Paperclip UI(`http://127.0.0.1:3100`)에서 프로바이더·키 설정 필요(키 입력은 사용자 직접).
+- 웹훅 실시간 유무·거절→재작업 자동 트리거 여부는 실사용에서 확인(폴링 폴백 항상 유효).
+
+### 생성된 테스트 데이터
+
+회사 Voxel-Diorama(`edcdbd03…`) · 프로젝트 · 에이전트 TD/ThreeJSDev · 이슈 VOX-1 · 코멘트 1 · governance 테스트 승인 3건(decided). Paperclip 내장 에이전트(Reflection Coach·Summarizer)는 자동 provision됨. 도그푸딩 회사로 유지하거나 삭제 가능.
