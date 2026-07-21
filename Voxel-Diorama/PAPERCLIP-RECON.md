@@ -95,6 +95,14 @@ securitySchemes 3종: `BoardSessionAuth`(세션 쿠키) · `BoardApiKeyAuth`(인
 
 내장 Reflection Coach·Summarizer(`claude_local`, paused).
 
+**조직도(reportsTo)** — LLM별 2팀. 팀장은 CEO 직속(독립), 팀원은 팀장에게 보고:
+```
+CEO
+├─ Senior Developer (Claude)        └─ Doc Writer (Claude)
+└─ Design & Planning Lead (Codex)   ├─ QA & Test Engineer   └─ Doc Writer (Codex)
+```
+reportsTo는 조율 구조일 뿐 결정권 아님(승인·거절·방향은 인간 전용, D4) → 위계가 있어도 두 시니어의 독립적 의사결정 다양성 유지.
+
 - **저토큰 모델**: DocWriter 2명은 `metadata.modelTier=low-token`로 표기 — 실제 모델은 LLM 자격 설정 시 UI에서 확정.
 - **어댑터 아이콘 주의**: 에이전트 icon enum에 `compass` 없음(프로젝트엔 있음) → PATCH 400 유발. 유효값(radar 등) 사용.
 
