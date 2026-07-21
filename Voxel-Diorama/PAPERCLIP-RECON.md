@@ -81,10 +81,23 @@ securitySchemes 3종: `BoardSessionAuth`(세션 쿠키) · `BoardApiKeyAuth`(인
 - LLM 어댑터 미설정 → 이슈 배정 시 에이전트가 자동 실행을 시도하다 `error`(예상됨). **실제 에이전트 코딩 + 작업 검수 승인 생성은 LLM 설정 후** 가능. Paperclip UI(`http://127.0.0.1:3100`)에서 프로바이더·키 설정 필요(키 입력은 사용자 직접).
 - 웹훅 실시간 유무·거절→재작업 자동 트리거 여부는 실사용에서 확인(폴링 폴백 항상 유효).
 
-### 워크포스 / 테스트 데이터 (2026-07-21 정리 후)
+### 워크포스 (2026-07-21 확정)
 
-**유지(도그푸딩 워크포스)** — 회사 Voxel-Diorama(`edcdbd03…`) · 프로젝트 "Voxel-Diorama v0.1" · 에이전트: Technical Director(pm, `process`), ThreeJSDev(engineer, `process`), **CodexQA(qa, `codex_local`)**. 내장 Reflection Coach·Summarizer(`claude_local`, paused).
+회사 Voxel-Diorama(`edcdbd03…`) · 프로젝트 "Voxel-Diorama v0.1". **의사결정 다양성 원칙** — 한 모델 판단에만 회사 방향을 맡기지 않도록 Claude/Codex 시니어를 독립적으로 둠. 문서 작성은 저토큰 모델 전담 사원에게.
 
-**정리된 테스트 흔적** — 이슈 VOX-1은 하드 삭제 불가(런 이력 11개 → DELETE 500)라 `cancelled`+아카이브 처리. governance 테스트 승인 3건은 삭제 엔드포인트 없음(불변 감사 기록, decided 상태로 잔존).
+| 팀 | 사원(name) | title | role | 책임 |
+|---|---|---|---|---|
+| **Claude** (`claude_local`) | ThreeJSDev | Senior Developer | engineer | R3F/TS 개발 + 시니어 개발 판단 |
+| **Claude** | DocWriter-Claude | Doc Writer (Claude) | general | 시니어 개발자 관점 개발/플랜 문서 (저토큰) |
+| **Codex** (`codex_local`) | Technical Director | Design & Planning Lead | pm | 분해·배정·넛지·리캡 + UI/UX 방향 + 기획, Claude와 독립된 다른 관점 |
+| **Codex** | CodexQA | QA & Test Engineer | qa | QA·테스트·증거 검토 |
+| **Codex** | DocWriter-Codex | Doc Writer (Codex) | general | 디자이너·기획 관점 문서 (저토큰) |
 
-**미정렬** — TD·ThreeJSDev는 아직 범용 `process` 어댑터. "Claude 사원"으로 만들려면 `claude_local`로 변경 필요(선택).
+내장 Reflection Coach·Summarizer(`claude_local`, paused).
+
+- **저토큰 모델**: DocWriter 2명은 `metadata.modelTier=low-token`로 표기 — 실제 모델은 LLM 자격 설정 시 UI에서 확정.
+- **어댑터 아이콘 주의**: 에이전트 icon enum에 `compass` 없음(프로젝트엔 있음) → PATCH 400 유발. 유효값(radar 등) 사용.
+
+### 정리된 테스트 흔적
+
+이슈 VOX-1은 하드 삭제 불가(런 이력 11개 → DELETE 500)라 `cancelled`+아카이브. governance 테스트 승인 3건은 삭제 엔드포인트 없음(불변 감사 기록).
