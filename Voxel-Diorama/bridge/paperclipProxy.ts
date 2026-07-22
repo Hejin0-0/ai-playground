@@ -8,6 +8,10 @@ const IDEMPOTENCY_HEADER = "idempotency-key";
 const UPSTREAM_TIMEOUT_MS = 10_000;
 
 function sendUpstreamError(res: ServerResponse, status: number, code: string, message: string) {
+  // A client that already disconnected (e.g. the socket died before a
+  // proxyTimeout abort was reported) leaves nothing to write to — writing
+  // anyway would throw and turn a handled failure into an uncaught one.
+  if (res.headersSent || res.writableEnded || res.destroyed) return;
   const body = JSON.stringify({ error: code, message });
   res.writeHead(status, {
     "content-type": "application/json",
@@ -25,9 +29,24 @@ function readBody(req: IncomingMessage): Promise<Buffer> {
   });
 }
 
+function isSameOrigin(req: IncomingMessage): boolean {
+  const origin = req.headers.origin;
+  if (!origin) return true; // no Origin header: not a fetch/XHR cross-origin write
+  try {
+    return new URL(origin).host === req.headers.host;
+  } catch {
+    return false;
+  }
+}
+
 // Forwards one request to upstream verbatim (method, path+query, headers, body)
 // and buffers the response so it can be replayed for repeat idempotency keys.
-function forwardToUpstream(req: IncomingMessage, target: string, body: Buffer): Promise<CachedResponse> {
+function forwardToUpstream(
+  req: IncomingMessage,
+  target: string,
+  body: Buffer,
+  timeoutMs: number,
+): Promise<CachedResponse> {
   return new Promise((resolve, reject) => {
     const targetUrl = new URL(req.url ?? "/", target);
     const upstreamReq = http.request(
@@ -35,7 +54,7 @@ function forwardToUpstream(req: IncomingMessage, target: string, body: Buffer): 
       {
         method: req.method,
         headers: { ...req.headers, host: targetUrl.host },
-        timeout: UPSTREAM_TIMEOUT_MS,
+        timeout: timeoutMs,
       },
       (upstreamRes) => {
         const chunks: Buffer[] = [];
@@ -66,6 +85,8 @@ interface PaperclipProxyOptions {
   prefix: string;
   /** e.g. "http://localhost:3100" */
   target: string;
+  /** Upstream response deadline in ms, for both proxy paths. Default 10s. */
+  timeoutMs?: number;
 }
 
 /**
@@ -75,7 +96,7 @@ interface PaperclipProxyOptions {
  * Idempotency-Key header are intercepted here so a repeated key hits upstream
  * at most once and replays the first response.
  */
-export function paperclipProxy({ prefix, target }: PaperclipProxyOptions): Plugin {
+export function paperclipProxy({ prefix, target, timeoutMs = UPSTREAM_TIMEOUT_MS }: PaperclipProxyOptions): Plugin {
   const store = new IdempotencyStore();
 
   const proxyErrorHandler = (err: Error, _req: IncomingMessage, res: ServerResponse) => {
@@ -102,6 +123,21 @@ export function paperclipProxy({ prefix, target }: PaperclipProxyOptions): Plugi
               changeOrigin: true,
               configure(proxy) {
                 proxy.on("error", proxyErrorHandler);
+                // Deliberately not using http-proxy's own `proxyTimeout`: its
+                // abort() races the incoming client socket's destroyed-state
+                // check in createErrorHandler, so on a real timeout it can
+                // route to 'econnreset' with the response socket already
+                // unwritable — dropping the client to a bare connection
+                // reset instead of a clean 504, and throwing uncaught if no
+                // 'econnreset' listener is attached. Owning the deadline here
+                // lets us write the 504 before touching the socket at all.
+                proxy.on("proxyReq", (proxyReq, _req, res) => {
+                  const timer = setTimeout(() => {
+                    sendUpstreamError(res, 504, "upstream_timeout", `no upstream response within ${timeoutMs}ms`);
+                    proxyReq.destroy();
+                  }, timeoutMs);
+                  proxyReq.once("close", () => clearTimeout(timer));
+                });
               },
             } satisfies ProxyOptions,
           },
@@ -116,16 +152,31 @@ export function paperclipProxy({ prefix, target }: PaperclipProxyOptions): Plugi
       // path — Connect's path-prefixed `use()` strips the mount segment,
       // which would forward requests upstream one path segment short.
       server.middlewares.use(async (req, res, next) => {
-        const key = req.headers[IDEMPOTENCY_HEADER];
-        if (
-          !req.url?.startsWith(prefix) ||
-          !key ||
-          Array.isArray(key) ||
-          !req.method ||
-          SAFE_METHODS.has(req.method)
-        ) {
+        if (!req.url?.startsWith(prefix) || !req.method || SAFE_METHODS.has(req.method)) {
           return next();
         }
+
+        // Contract §4.2: same-origin only. Everything past this point mutates
+        // upstream state, so cross-origin writes are rejected before any
+        // other check (including before revealing whether a key is required).
+        if (!isSameOrigin(req)) {
+          return sendUpstreamError(res, 403, "cross_origin_forbidden", "writes require a same-origin request");
+        }
+
+        const rawKey = req.headers[IDEMPOTENCY_HEADER];
+        if (!rawKey || Array.isArray(rawKey)) {
+          return sendUpstreamError(
+            res,
+            400,
+            "idempotency_key_required",
+            `writes require an ${IDEMPOTENCY_HEADER} header`,
+          );
+        }
+
+        // Composite so the same key value reused across different
+        // method/path pairs can't replay one endpoint's cached response
+        // for another.
+        const key = `${req.method} ${req.url.split("?")[0]}::${rawKey}`;
 
         const existing = store.claim(key);
         if (existing) {
@@ -140,7 +191,7 @@ export function paperclipProxy({ prefix, target }: PaperclipProxyOptions): Plugi
         const settle = store.begin(key);
         try {
           const body = await readBody(req);
-          const response = await forwardToUpstream(req, target, body);
+          const response = await forwardToUpstream(req, target, body, timeoutMs);
           settle.resolve(response);
           writeCached(res, response);
         } catch (err) {

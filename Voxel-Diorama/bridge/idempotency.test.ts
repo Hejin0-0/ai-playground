@@ -77,8 +77,31 @@ async function differentKeysAreIndependent() {
   assert.equal(store.claim("y"), undefined);
 }
 
+async function entriesExpireAfterTtl() {
+  const store = new IdempotencyStore(20, 500);
+  const settle = store.begin("expiring");
+  settle.resolve({ status: 200, headers: {}, body: Buffer.from("first") });
+  assert.ok(store.claim("expiring"), "entry must be cached before TTL elapses");
+
+  await new Promise((r) => setTimeout(r, 40));
+  assert.equal(store.claim("expiring"), undefined, "entry must be evicted once TTL elapses");
+}
+
+async function entryCountIsCappedByEvictingOldest() {
+  const store = new IdempotencyStore(60_000, 2);
+  for (const key of ["a", "b", "c"]) {
+    const settle = store.begin(key);
+    settle.resolve({ status: 200, headers: {}, body: Buffer.from(key) });
+  }
+  assert.equal(store.claim("a"), undefined, "oldest entry must be evicted once the cap is exceeded");
+  assert.ok(store.claim("b"), "entry within the cap must still be cached");
+  assert.ok(store.claim("c"), "most recent entry must still be cached");
+}
+
 await repeatKeyReplaysFirstResultAndCallsUpstreamOnce();
 await concurrentDuplicatesDedupeToOneUpstreamCall();
 await connectionFailureIsNotCachedAndAllowsRetry();
 await differentKeysAreIndependent();
+await entriesExpireAfterTtl();
+await entryCountIsCappedByEvictingOldest();
 console.log("idempotency.test.ts: all checks passed");

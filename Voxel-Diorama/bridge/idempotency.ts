@@ -11,14 +11,35 @@ export interface CachedResponse {
   body: Buffer;
 }
 
+const DEFAULT_TTL_MS = 5 * 60_000;
+const DEFAULT_MAX_ENTRIES = 500;
+
+interface DoneEntry {
+  response: CachedResponse;
+  at: number;
+}
+
 export class IdempotencyStore {
   private pending = new Map<string, Promise<CachedResponse>>();
-  private done = new Map<string, CachedResponse>();
+  private done = new Map<string, DoneEntry>();
+  private ttlMs: number;
+  private maxEntries: number;
+
+  constructor(ttlMs = DEFAULT_TTL_MS, maxEntries = DEFAULT_MAX_ENTRIES) {
+    this.ttlMs = ttlMs;
+    this.maxEntries = maxEntries;
+  }
 
   /** Existing result/in-flight wait for `key`, or undefined if this is a new key. */
   claim(key: string): Promise<CachedResponse> | undefined {
     const cached = this.done.get(key);
-    if (cached) return Promise.resolve(cached);
+    if (cached) {
+      if (Date.now() - cached.at > this.ttlMs) {
+        this.done.delete(key);
+      } else {
+        return Promise.resolve(cached.response);
+      }
+    }
     return this.pending.get(key);
   }
 
@@ -36,12 +57,17 @@ export class IdempotencyStore {
     this.pending.set(key, wait);
     return {
       resolve: (r) => {
-        this.done.set(key, r);
+        this.done.set(key, { response: r, at: Date.now() });
+        // ponytail: `done` is a Map, so insertion order == iteration order —
+        // evicting `.keys().next()` on overflow is a plain TTL+max-entries
+        // cap, not a real LRU. Upgrade only if reused outside this dev proxy.
+        if (this.done.size > this.maxEntries) {
+          const oldestKey = this.done.keys().next().value;
+          if (oldestKey !== undefined) this.done.delete(oldestKey);
+        }
         this.pending.delete(key);
         resolveFn(r);
       },
-      // ponytail: no eviction/TTL on `done` — this store lives only as long
-      // as the dev server process; add eviction if it's ever reused elsewhere.
       reject: (e) => {
         this.pending.delete(key);
         rejectFn(e);

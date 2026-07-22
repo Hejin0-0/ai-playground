@@ -8,4 +8,7 @@ export default defineConfig({
       target: process.env.PAPERCLIP_PROXY_TARGET ?? "http://localhost:3100",
     }),
   ],
+  server: {
+    host: "127.0.0.1",
+  },
 });
