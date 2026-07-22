@@ -47,6 +47,88 @@ async function saveRejectsMissingSchemaVersion() {
   });
 }
 
+async function concurrentSavesAreSerialized() {
+  await withTmpDir(async (dir) => {
+    const file = path.join(dir, "world-state.json");
+    let inFlight = 0;
+    let overlapped = false;
+    const realWriteFile = fs.writeFile.bind(fs);
+    const trackingWrite: FsOps["writeFile"] = async (filePath, data) => {
+      inFlight += 1;
+      if (inFlight > 1) overlapped = true;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      await realWriteFile(filePath, data, "utf8");
+      inFlight -= 1;
+    };
+    const store = new WorldStateStore(file, { writeFile: trackingWrite });
+
+    await store.save({ schemaVersion: 1, tick: 0 });
+    await Promise.all([
+      store.save({ schemaVersion: 1, tick: 1 }),
+      store.save({ schemaVersion: 1, tick: 2 }),
+    ]);
+
+    assert.equal(overlapped, false, "save() calls must be serialized, never overlapping writes");
+
+    const main = JSON.parse(await fs.readFile(file, "utf8"));
+    const bak = JSON.parse(await fs.readFile(`${file}.bak`, "utf8"));
+    assert.equal(main.tick, 2, "main must hold the state from the second queued save");
+    assert.equal(bak.tick, 1, "bak must hold the state from the first queued save, not be skipped by the race");
+  });
+}
+
+async function writeFailureMidWriteLeavesNoTmpFile() {
+  await withTmpDir(async (dir) => {
+    const file = path.join(dir, "world-state.json");
+    const store = new WorldStateStore(file);
+    await store.save({ schemaVersion: 1, tick: 1 });
+
+    const realWriteFile = fs.writeFile.bind(fs);
+    const partialThenFailWrite: FsOps["writeFile"] = async (filePath, data) => {
+      await realWriteFile(filePath, data.slice(0, 5), "utf8");
+      throw new Error("injected mid-write failure");
+    };
+    const flaky = new WorldStateStore(file, { writeFile: partialThenFailWrite });
+
+    await assert.rejects(() => flaky.save({ schemaVersion: 1, tick: 2 }));
+
+    const leftovers = (await fs.readdir(dir)).filter((f) => f.includes(".tmp"));
+    assert.deepEqual(leftovers, [], "partial tmp file must be cleaned up after a failed write");
+  });
+}
+
+async function saveRejectsInvalidSchemaVersions() {
+  await withTmpDir(async (dir) => {
+    const file = path.join(dir, "world-state.json");
+    const store = new WorldStateStore(file);
+    for (const bad of [NaN, 0, -1, 1.5]) {
+      // @ts-expect-error deliberately passing invalid schemaVersion values
+      await assert.rejects(() => store.save({ schemaVersion: bad, tick: 1 }), `schemaVersion ${bad} must be rejected`);
+    }
+    await assert.rejects(() => fs.readFile(file, "utf8"), "nothing must be written when schemaVersion is invalid");
+  });
+}
+
+async function saveDoesNotOverwriteBakWithCorruptedMain() {
+  await withTmpDir(async (dir) => {
+    const file = path.join(dir, "world-state.json");
+    const store = new WorldStateStore(file);
+    await store.save({ schemaVersion: 1, tick: 1 });
+    await store.save({ schemaVersion: 1, tick: 2 }); // bak now holds tick:1
+
+    // Corrupt main out-of-band (no load() in between), e.g. an external crash mid-write.
+    await fs.writeFile(file, "{not valid json", "utf8");
+
+    await store.save({ schemaVersion: 1, tick: 3 });
+
+    const bak = JSON.parse(await fs.readFile(`${file}.bak`, "utf8"));
+    assert.deepEqual(bak, { schemaVersion: 1, tick: 1 }, "bak must keep the last valid state, not the corrupted main");
+
+    const main = JSON.parse(await fs.readFile(file, "utf8"));
+    assert.equal(main.tick, 3, "main must still receive the new save");
+  });
+}
+
 async function renameFailureIntoMainLeavesPriorMainIntact() {
   await withTmpDir(async (dir) => {
     const file = path.join(dir, "world-state.json");
@@ -92,7 +174,7 @@ async function writeFailureBeforeAnyRenameLeavesFilesUntouched() {
   });
 }
 
-async function bakRenameFailureStillLeavesMainAndBakFullyValid() {
+async function bakStepFailureLeavesMainUntouched() {
   await withTmpDir(async (dir) => {
     const file = path.join(dir, "world-state.json");
     const bakPath = `${file}.bak`;
@@ -107,14 +189,14 @@ async function bakRenameFailureStillLeavesMainAndBakFullyValid() {
     };
     const flaky = new WorldStateStore(file, { rename: failingRename });
 
-    // The bak-side rename fails, but main was already committed by then —
-    // save() surfaces the error, yet main correctly reflects the new state.
+    // The bak commit happens before the main commit, so a failed bak step
+    // must never leave main pointing at unintended new content.
     await assert.rejects(() => flaky.save({ schemaVersion: 1, tick: 3 }));
 
     const main = JSON.parse(await fs.readFile(file, "utf8"));
     const bak = JSON.parse(await fs.readFile(bakPath, "utf8"));
-    assert.equal(main.tick, 3, "main commit is independent of the bak step");
-    assert.equal(bak.tick, 1, "bak is left at its last fully-committed value, not corrupted");
+    assert.equal(main.tick, 2, "main must remain untouched when the bak-commit step fails before main is written");
+    assert.equal(bak.tick, 1, "bak must remain at its last good value when its own commit step fails");
   });
 }
 
@@ -159,9 +241,13 @@ async function missingMainAndBakLoadsUndefined() {
 await twoSavesLeaveMainAsNewestAndBakAsPrevious();
 await firstSaveHasNoBak();
 await saveRejectsMissingSchemaVersion();
+await concurrentSavesAreSerialized();
+await writeFailureMidWriteLeavesNoTmpFile();
+await saveRejectsInvalidSchemaVersions();
+await saveDoesNotOverwriteBakWithCorruptedMain();
 await renameFailureIntoMainLeavesPriorMainIntact();
 await writeFailureBeforeAnyRenameLeavesFilesUntouched();
-await bakRenameFailureStillLeavesMainAndBakFullyValid();
+await bakStepFailureLeavesMainUntouched();
 await restartLoadsIdenticalState();
 await corruptedMainRecoversFromBak();
 await missingMainAndBakLoadsUndefined();
