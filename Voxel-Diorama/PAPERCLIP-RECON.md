@@ -170,6 +170,12 @@ reportsTo는 조율 구조일 뿐 결정권 아님(승인·거절·방향은 인
 | Claude | `claude-opus-4-8` (Eng Lead) | — | `claude-sonnet-4-6` (DocWriter) | `claude-haiku-4-5` (Utility) |
 | Codex | `gpt-5.6-sol` (CodexDev 신규) | `gpt-5.6-terra` (QA·P&D Lead) | `gpt-5.6-luna` (DocWriter) | — |
 
-**개선안(채택) — 크로스-프로바이더 구현 이중화**: 시니어 개발을 Claude Opus + Codex Sol **양쪽**에 두고, **쿼터 있는 provider가 구현 / 반대 provider가 QA** 라우팅. 한 provider 한도로 빌드 전체가 정지하던 문제 해소. Claude 완전 다운 시 Codex끼리 진행(교차검증 일시 완화), 복귀 시 원상.
+**개선안(채택) — 크로스-프로바이더 구현 이중화**: 시니어 개발을 Claude Opus + Codex Sol **양쪽**에 둔다.
 
-**실증**: Claude 한도로 막힌 VOX-12 재작업을 대기 없이 Codex Sol(CodexDev)에 배정해 즉시 진행. 어댑터 모델 미지정 시 Paperclip이 미지원 모델을 골라 런이 죽으므로 codex_local은 지원 모델 명시 필수(gpt-5.6-sol 등).
+**라우팅 (사용자 확정: Codex 먼저, Claude 나중)**: 구현 **기본 = Codex Sol**(별도 쿼터, 먼저 소진). **Claude Opus = 예비** — Codex가 바쁘거나 쿼터 부족할 때, 또는 고가치 교차 리뷰용으로만 아껴 씀. QA는 가능하면 반대 provider. → Claude 한도로 빌드가 정지하던 문제 해소 + 희소한 Claude 쿼터 보존.
+
+**실증**: Claude 한도로 막힌 VOX-12 재작업을 대기 없이 Codex Sol(CodexDev)에 배정해 즉시 진행.
+
+**gotcha (운영)**:
+- codex_local은 지원 모델 명시 필수(`gpt-5.6-sol` 등) — 미지정 시 Paperclip이 미지원 모델을 골라 런이 죽음.
+- `authorizationPolicy.trustBoundary.mode=low_trust_review`는 **trustPreset=standard여도** 저신뢰 실행(격리 워크스페이스)을 강제 → setup_failed/blocked. 게이트 끌 땐 boundary도 함께 제거(`authorizationPolicy:{trustPreset:standard}`).
