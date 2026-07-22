@@ -1,5 +1,6 @@
 import http from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { TLSSocket } from "node:tls";
 import type { Plugin, ProxyOptions } from "vite";
 import { IdempotencyStore, type CachedResponse } from "./idempotency.ts";
 
@@ -20,23 +21,54 @@ function sendUpstreamError(res: ServerResponse, status: number, code: string, me
   res.end(body);
 }
 
-function readBody(req: IncomingMessage): Promise<Buffer> {
+// Rejects if the body doesn't finish within `timeoutMs` — a client that
+// declares a Content-Length it never delivers would otherwise leave `data`
+// listeners (and the caller's idempotency claim) attached forever.
+function readBody(req: IncomingMessage, timeoutMs: number): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (c) => chunks.push(c));
-    req.on("end", () => resolve(Buffer.concat(chunks)));
-    req.on("error", reject);
+    const onData = (c: Buffer) => chunks.push(c);
+    const onEnd = () => {
+      cleanup();
+      resolve(Buffer.concat(chunks));
+    };
+    const onError = (err: Error) => {
+      cleanup();
+      reject(err);
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error(`request_body_timeout: client did not finish sending the body within ${timeoutMs}ms`));
+    }, timeoutMs);
+    function cleanup() {
+      clearTimeout(timer);
+      req.off("data", onData);
+      req.off("end", onEnd);
+      req.off("error", onError);
+    }
+    req.on("data", onData);
+    req.on("end", onEnd);
+    req.on("error", onError);
   });
 }
 
+// Same-origin means the full scheme+host+port tuple, not just host — a
+// same-host Origin with the wrong scheme is still cross-origin.
+// No Origin header is treated as same-origin: only browsers send Origin on
+// cross-site fetch/XHR, so a non-browser client (curl, server-to-server)
+// has no Origin to spoof and this dev-only proxy trusts its absence rather
+// than blocking legitimate non-browser callers.
 function isSameOrigin(req: IncomingMessage): boolean {
   const origin = req.headers.origin;
-  if (!origin) return true; // no Origin header: not a fetch/XHR cross-origin write
+  if (!origin) return true;
+  let parsed: URL;
   try {
-    return new URL(origin).host === req.headers.host;
+    parsed = new URL(origin);
   } catch {
     return false;
   }
+  const scheme = req.socket instanceof TLSSocket ? "https:" : "http:";
+  return parsed.protocol === scheme && parsed.host === req.headers.host;
 }
 
 // Forwards one request to upstream verbatim (method, path+query, headers, body)
@@ -174,9 +206,12 @@ export function paperclipProxy({ prefix, target, timeoutMs = UPSTREAM_TIMEOUT_MS
         }
 
         // Composite so the same key value reused across different
-        // method/path pairs can't replay one endpoint's cached response
-        // for another.
-        const key = `${req.method} ${req.url.split("?")[0]}::${rawKey}`;
+        // method/path pairs can't replay one endpoint's cached response for
+        // another. JSON-encoded as an array (not delimited string
+        // concatenation) so no method/path/key content can forge a
+        // collision — string delimiters like "::" are ambiguous when the
+        // path or key can itself contain them.
+        const key = JSON.stringify([req.method, req.url.split("?")[0], rawKey]);
 
         const existing = store.claim(key);
         if (existing) {
@@ -190,7 +225,7 @@ export function paperclipProxy({ prefix, target, timeoutMs = UPSTREAM_TIMEOUT_MS
 
         const settle = store.begin(key);
         try {
-          const body = await readBody(req);
+          const body = await readBody(req, timeoutMs);
           const response = await forwardToUpstream(req, target, body, timeoutMs);
           settle.resolve(response);
           writeCached(res, response);

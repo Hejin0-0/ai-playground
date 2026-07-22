@@ -231,6 +231,142 @@ async function upstreamTimeoutReturns504() {
   }
 }
 
+// VOX-17 QA rejection #1 — Origin must match scheme+host+port as a full
+// tuple, not just host. A same-host Origin with the wrong scheme (e.g.
+// `https://` against a plain-http dev server) must still be rejected.
+async function crossSchemeOriginIsRejectedDespiteMatchingHost() {
+  const upstream = await startMockUpstream();
+  const server = await createViteServer({
+    root: ROOT,
+    configFile: false,
+    server: { host: "127.0.0.1", port: await freePort(), strictPort: true },
+    plugins: [paperclipProxy({ prefix: "/api", target: upstream.url })],
+  });
+  await server.listen();
+  try {
+    const addr = server.httpServer?.address();
+    if (!addr || typeof addr === "string") throw new Error("no address");
+    const base = `http://127.0.0.1:${addr.port}`;
+    const spoofedOrigin = `https://127.0.0.1:${addr.port}`; // same host:port, wrong scheme
+
+    const beforeCount = upstream.counts["/api/tasks"] ?? 0;
+    const res = await request(`${base}/api/tasks`, {
+      method: "POST",
+      headers: { origin: spoofedOrigin, "idempotency-key": "scheme-mismatch" },
+    });
+    assert.equal(res.status, 403, `same-host but wrong-scheme Origin must be rejected, got ${res.status}`);
+    assert.equal(upstream.counts["/api/tasks"] ?? 0, beforeCount, "upstream must not be called for a scheme mismatch");
+  } finally {
+    await server.close();
+    await upstream.close();
+  }
+}
+
+// VOX-17 QA rejection #2 — ledger key must be collision-proof under
+// arbitrary path/key content, not a delimited string concatenation.
+// path=/api/collision-a::b + key=c must not collide with
+// path=/api/collision-a + key=b::c.
+async function ledgerKeyEncodingPreventsPathKeyCollision() {
+  const upstream = await startMockUpstream();
+  const server = await createViteServer({
+    root: ROOT,
+    configFile: false,
+    server: { host: "127.0.0.1", port: await freePort(), strictPort: true },
+    plugins: [paperclipProxy({ prefix: "/api", target: upstream.url })],
+  });
+  await server.listen();
+  try {
+    const addr = server.httpServer?.address();
+    if (!addr || typeof addr === "string") throw new Error("no address");
+    const base = `http://127.0.0.1:${addr.port}`;
+    const origin = base;
+
+    const first = await request(`${base}/api/collision-a::b`, {
+      method: "POST",
+      headers: { origin, "idempotency-key": "c" },
+    });
+    const second = await request(`${base}/api/collision-a`, {
+      method: "POST",
+      headers: { origin, "idempotency-key": "b::c" },
+    });
+
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 201);
+    assert.notEqual(
+      second.body,
+      first.body,
+      "colliding delimited keys must not replay each other's cached response",
+    );
+    assert.equal(upstream.counts["/api/collision-a"], 1, "the second, distinct (path,key) pair must still reach upstream");
+  } finally {
+    await server.close();
+    await upstream.close();
+  }
+}
+
+// VOX-17 QA rejection #3 — a write whose declared Content-Length never
+// arrives must not leave its idempotency key permanently claimed. It must
+// fail within the configured deadline, and a fresh request with the same
+// key must then be free to reach upstream.
+async function partialBodyReleasesPendingClaimInsteadOfHangingForever() {
+  const upstream = await startMockUpstream();
+  const server = await createViteServer({
+    root: ROOT,
+    configFile: false,
+    server: { host: "127.0.0.1", port: await freePort(), strictPort: true },
+    plugins: [paperclipProxy({ prefix: "/api", target: upstream.url, timeoutMs: 200 })],
+  });
+  await server.listen();
+  try {
+    const addr = server.httpServer?.address();
+    if (!addr || typeof addr === "string") throw new Error("no address");
+    const base = `http://127.0.0.1:${addr.port}`;
+
+    const partial = await new Promise<Reply>((resolve, reject) => {
+      const req = http.request(
+        `${base}/api/tasks`,
+        {
+          method: "POST",
+          headers: {
+            origin: base,
+            "idempotency-key": "partial-key",
+            "content-type": "application/json",
+            "content-length": "100",
+          },
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on("data", (c) => chunks.push(c));
+          res.on("end", () => resolve({ status: res.statusCode ?? 0, headers: res.headers, body: Buffer.concat(chunks).toString() }));
+        },
+      );
+      req.on("error", reject);
+      req.write(Buffer.from('{"partial":true'));
+      // Deliberately never call req.end() — declared 100 bytes, sent fewer.
+    });
+    assert.ok(
+      partial.status >= 400,
+      `a body that never completes must fail within the deadline, not hang forever, got ${partial.status}`,
+    );
+
+    const retry = await request(`${base}/api/tasks`, {
+      method: "POST",
+      headers: { origin: base, "idempotency-key": "partial-key" },
+    });
+    assert.equal(
+      retry.status,
+      201,
+      "same key retried after a partial-body failure must still reach upstream, not be stuck behind a stale pending claim",
+    );
+  } finally {
+    await server.close();
+    await upstream.close();
+  }
+}
+
 await primaryScenarios();
 await upstreamTimeoutReturns504();
+await crossSchemeOriginIsRejectedDespiteMatchingHost();
+await ledgerKeyEncodingPreventsPathKeyCollision();
+await partialBodyReleasesPendingClaimInsteadOfHangingForever();
 console.log("proxy.e2e.test.ts: all checks passed");
