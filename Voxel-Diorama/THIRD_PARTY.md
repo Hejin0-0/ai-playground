@@ -18,6 +18,9 @@
 | 소스 | 라이선스 | 위치 |
 |---|---|---|
 | Waza (tw93) · agent-skills · skills_mattpocock · ponytail · davidondrej-skills | 전부 MIT | `skills/<source>/` (각 폴더에 LICENSE 동봉) |
+| Claude-Code-Game-Studios(6종) · emilkowalski_skills(2종) · Three.js-Object-Sculptor · Kami(tw93) · security-audit-skill | 전부 MIT | `skills/<source>/` (각 폴더에 LICENSE 동봉) |
+
+> 미복사 창고 자원 카탈로그(TRELLIS 등)와 라이선스 주의 항목(meshflow 비상업 등)은 `skills/README.md` 참조.
 
 ## 런타임 의존성 (주요)
 
