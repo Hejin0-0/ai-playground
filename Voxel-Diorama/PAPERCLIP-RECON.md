@@ -96,6 +96,21 @@ securitySchemes 3종: `BoardSessionAuth`(세션 쿠키) · `BoardApiKeyAuth`(인
 
 > **v0.1 활성 3명**(두 리드+QA)만 가동, 나머지는 `pause`. 단계적 활성화 트리거는 PLAN.md §3.1 참고. 목표 조직·설계 근거는 §2 지휘 체계·D12.
 
+## ⚠️ 게이팅 발견 + 결정 (검수 전 정지 = B)
+
+**발견 (2026-07-22, 첫 라이브 루프 VOX-2)**: Paperclip 에이전트는 기본적으로 **인간 승인을 기다리지 않고 자율 진행**한다. `planning` 모드로 발주한 VOX-2가 계획만 내지 않고 하위 이슈 VOX-3~7을 스스로 만들고 구현까지 실행(VOX-3·4 done, VOX-5 실행)했다. → 플랜의 D4(인간 전용 승인)·§3.4-4(검수 우회 done → 조정 필요)를 **실제로 강제하려면 설정이 필요**함을 확인. (다행히 자율 실행은 격리 워크스페이스에서 돌아 실제 레포는 무손상.)
+
+**결정 (사용자 채택: B — 검수 전 정지)**: 프로젝트 사원 6명 전원에 게이트 적용:
+```
+PATCH /api/agents/{id}/permissions
+{ "trustPreset": "low_trust_review", "canAssignTasks": false, "canCreateAgents": false }
+```
+- **`trustPreset: low_trust_review`** → 에이전트 산출물이 **격리(quarantine)** 됨. 인간이 `POST /api/issues/{id}/low-trust/promotions`로 **promote(승인)** 해야 인정 → in_review 정지 + 인간 게이트.
+- **`canAssignTasks: false`** → 에이전트가 스스로 하위작업 생성·배정 불가 (VOX-2식 자율 폭주 차단). 리드는 계획 문서만 제출, 하위 발주는 인간이.
+- **게임 층 안전망 유지**: §3.4-4 "검수 없이 done → 조정 필요"는 그대로 (이중 방어).
+
+**미검증**: 이 게이트가 다음 실제 런에서 정말 정지·격리하는지는 다음 발주 때 확인(토큰 절약 위해 지금 전용 검증 런은 미실행).
+
 내장 Reflection Coach·Summarizer(`claude_local`, paused).
 
 **조직도(reportsTo)** — LLM별 2팀. 팀장은 CEO 직속(독립), 팀원은 팀장에게 보고:
