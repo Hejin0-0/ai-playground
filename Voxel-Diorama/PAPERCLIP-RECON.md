@@ -158,3 +158,18 @@ reportsTo는 조율 구조일 뿐 결정권 아님(승인·거절·방향은 인
 - 거버넌스: 시도 2부터 in_review 정지·main 불변·증거 코멘트 준수 (AGENTS.md + main 보호 작동).
 - 이 이력은 Phase 3 렌더 시 폐허 2 + 건물 1로 세워진다 (D9).
 - 운영 노트: Codex 사원은 어댑터에 지원 모델 명시 고정 필요(`gpt-5.6-sol`) — 미지정 시 Paperclip이 미지원 모델(gpt-5.3-codex-spark)을 골라 런이 죽는 사례 있었음.
+
+## 💰 ORG v3 — 모델 티어 배정 + Claude 한도 대응 (2026-07-22)
+
+**계기**: VOX-12 구현 중 Claude 세션 한도(`resets 10:20pm KST`)로 빌드 정지. 토큰 부족 대응.
+
+**모델 티어 매핑** (사용자 지시):
+
+| provider | 시니어 개발 | QA·기획 | 문서 | 단순 반복 |
+|---|---|---|---|---|
+| Claude | `claude-opus-4-8` (Eng Lead) | — | `claude-sonnet-4-6` (DocWriter) | `claude-haiku-4-5` (Utility) |
+| Codex | `gpt-5.6-sol` (CodexDev 신규) | `gpt-5.6-terra` (QA·P&D Lead) | `gpt-5.6-luna` (DocWriter) | — |
+
+**개선안(채택) — 크로스-프로바이더 구현 이중화**: 시니어 개발을 Claude Opus + Codex Sol **양쪽**에 두고, **쿼터 있는 provider가 구현 / 반대 provider가 QA** 라우팅. 한 provider 한도로 빌드 전체가 정지하던 문제 해소. Claude 완전 다운 시 Codex끼리 진행(교차검증 일시 완화), 복귀 시 원상.
+
+**실증**: Claude 한도로 막힌 VOX-12 재작업을 대기 없이 Codex Sol(CodexDev)에 배정해 즉시 진행. 어댑터 모델 미지정 시 Paperclip이 미지원 모델을 골라 런이 죽으므로 codex_local은 지원 모델 명시 필수(gpt-5.6-sol 등).
