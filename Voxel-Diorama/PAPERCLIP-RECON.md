@@ -109,7 +109,10 @@ PATCH /api/agents/{id}/permissions
 - **`canAssignTasks: false`** → 에이전트가 스스로 하위작업 생성·배정 불가 (VOX-2식 자율 폭주 차단). 리드는 계획 문서만 제출, 하위 발주는 인간이.
 - **게임 층 안전망 유지**: §3.4-4 "검수 없이 done → 조정 필요"는 그대로 (이중 방어).
 
-**미검증**: 이 게이트가 다음 실제 런에서 정말 정지·격리하는지는 다음 발주 때 확인(토큰 절약 위해 지금 전용 검증 런은 미실행).
+**검증 결과 (2026-07-22, VOX-9·VOX-10 실측)**:
+- ✅ **`canAssignTasks: false` 작동** — 두 검증 런 모두 총 이슈 수 불변 → 에이전트가 자율 하위작업 생성 안 함(VOX-2식 폭주 차단 확인).
+- ⚠️ **`low_trust_review` 완전 격리는 추가 인프라 필요** — 순차 발견: ① trust 경계 필요(`trustBoundary.projectIds`로 해결) → ② **"격리 워크스페이스(isolated workspaces)" 활성화 필요**. 우리 프로젝트는 워크스페이스 자체가 없음(`workspaces: []`, `executionWorkspacePolicy: null`) → 저신뢰 실행이 `setup_failed`로 blocked. 격리 워크스페이스는 프로젝트에 git 워크스페이스를 붙이는 **Phase 2 인프라**다.
+- **결론**: 완전 격리 게이트는 Phase 2(브리지·워크스페이스) 때 완성. 그 전까지는 `canAssignTasks:false`(폭주 차단) + 게임 층 §3.4-4(검수 우회 done→조정 필요, 인간 승인만 건물)로 B를 근사한다.
 
 내장 Reflection Coach·Summarizer(`claude_local`, paused).
 
