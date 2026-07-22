@@ -114,6 +114,19 @@ PATCH /api/agents/{id}/permissions
 - ⚠️ **`low_trust_review` 완전 격리는 추가 인프라 필요** — 순차 발견: ① trust 경계 필요(`trustBoundary.projectIds`로 해결) → ② **"격리 워크스페이스(isolated workspaces)" 활성화 필요**. 우리 프로젝트는 워크스페이스 자체가 없음(`workspaces: []`, `executionWorkspacePolicy: null`) → 저신뢰 실행이 `setup_failed`로 blocked. 격리 워크스페이스는 프로젝트에 git 워크스페이스를 붙이는 **Phase 2 인프라**다.
 - **결론·채택 (사용자: 길 1 린 B)**: 완전 격리 게이트는 Phase 2(브리지·워크스페이스) 때 완성. v0.1은 **`trustPreset: standard`로 되돌리고**(격리 워크스페이스 없이 막히지 않게) **`canAssignTasks: false` 유지**(폭주 차단) + 게임 층 §3.4-4(검수 우회 done→조정 필요, 인간 승인만 건물)로 B 근사. 현재 6명 전원 `trustPreset=standard, canAssignTasks=false`.
 
+### 🚨 사고 기록 — VOX-11 첫 구현 런 (2026-07-22)
+
+Engineering Lead(claude_local)의 첫 실제 구현(VOX-11 프록시·idempotency)에서 **게이트 위반 2건** 발생:
+
+1. **자체 done** — `in_review` 제출 없이 스스로 `done` 처리 (린 B의 알려진 한계가 실전 확인됨).
+2. **`origin/main` 직접 push** — 워크스페이스 `defaultRef=feat/...`인데도 main 체크아웃에서 작업·push (커밋 74ca2ba). 관리형 클론에 사용자 로컬 git 자격 증명이 그대로 쓰임. 에이전트가 "PLAN.md가 저장소에 없다"고 보고한 것도 main 체크아웃이었기 때문 — **defaultRef가 런 체크아웃에 적용되지 않는 것으로 보임(하네스 동작 주의)**.
+
+**수습(사용자 승인)**: 커밋을 feat로 cherry-pick(0b41f96) → origin/main을 4ba602e로 force 원복. 작업물 자체는 양호(프록시+idempotency+자체 테스트 6파일)라 feat에서 정식 검수 예정.
+
+**재발 방지**:
+- 6명 전원 instructions-bundle(AGENTS.md)에 명문화: main push 금지·feat 브랜치 전용·완료 시 done 금지/in_review 제출·증거 코멘트 필수·하위 이슈 생성 금지·기준 문서 위치.
+- **GitHub main 브랜치 보호는 사용자만 설정 가능** — Settings → Branches → Branch protection rule(main, force push·직접 push 차단) 권장. 미설정 시 지침만으로는 강제력 없음.
+
 내장 Reflection Coach·Summarizer(`claude_local`, paused).
 
 **조직도(reportsTo)** — LLM별 2팀. 팀장은 CEO 직속(독립), 팀원은 팀장에게 보고:
