@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  createTaskListCommitGate,
   createTaskSubmitter,
   listTasks,
   mergeCreatedTask,
@@ -79,19 +80,64 @@ async function validDraftSendsOneRequestAndReturnsTheCreatedTask() {
 
 async function failedRetryReusesItsIdempotencyKey() {
   const keys: string[] = [];
+  const generatedKeys = ["stable-retry-key", "duplicate-risk-key"];
   let requests = 0;
   const submitter = createTaskSubmitter(async (_input, init) => {
     requests += 1;
     keys.push(new Headers(init?.headers).get("Idempotency-Key") ?? "");
     if (requests === 1) throw new Error("connection lost");
     return Response.json(existing, { status: 201 });
-  }, "company-1", () => "stable-retry-key");
+  }, "company-1", () => generatedKeys.shift() ?? "unexpected");
 
-  await assert.rejects(() => submitter.submit({ title: "재시도", priority: "low" }));
+  await assert.rejects(() => submitter.submit({ title: " 재시도 ", priority: "low" }));
+  await new Promise((resolve) => setTimeout(resolve, 0));
   const retried = await submitter.submit({ title: "재시도", priority: "low" });
 
   assert.deepEqual(keys, ["stable-retry-key", "stable-retry-key"]);
   assert.deepEqual(retried, { ok: true, task: existing });
+}
+
+async function changedDraftAfterFailureGetsANewIdempotencyKey() {
+  const keys = ["key-a", "key-b"];
+  const sentKeys: string[] = [];
+  let requests = 0;
+  const submitter = createTaskSubmitter(async (_input, init) => {
+    sentKeys.push(new Headers(init?.headers).get("Idempotency-Key") ?? "");
+    requests += 1;
+    if (requests === 1) throw new Error("connection lost");
+    return Response.json(existing, { status: 201 });
+  }, "company-1", () => keys.shift() ?? "unexpected");
+
+  await assert.rejects(() => submitter.submit({ title: "업무 A", priority: "low" }));
+  await submitter.submit({ title: "업무 B", priority: "low" });
+
+  assert.deepEqual(sentKeys, ["key-a", "key-b"]);
+}
+
+async function differentConcurrentDraftIsNotSilentlyCoalesced() {
+  let finishRequest: ((response: Response) => void) | undefined;
+  const response = new Promise<Response>((resolve) => {
+    finishRequest = resolve;
+  });
+  const submitter = createTaskSubmitter(() => response, "company-1", () => "key-create");
+
+  const first = submitter.submit({ title: "업무 A", priority: "medium" });
+  await assert.rejects(
+    () => submitter.submit({ title: "업무 B", priority: "medium" }),
+    /다른 업무 생성이 진행 중입니다/,
+  );
+  finishRequest?.(Response.json(existing, { status: 201 }));
+  await first;
+}
+
+function createdTaskInvalidatesAnOlderListCommit() {
+  const gate = createTaskListCommitGate();
+  const shouldCommitOldLoad = gate.beginLoad();
+
+  gate.invalidate();
+
+  assert.equal(shouldCommitOldLoad(), false);
+  assert.equal(gate.beginLoad()(), true);
 }
 
 function mergeKeepsARepeatedSuccessToOneVisibleTask() {
@@ -105,5 +151,8 @@ await listUsesTheCompanyProxyAndParsesTasks();
 await invalidDraftShowsFieldErrorsWithoutARequest();
 await validDraftSendsOneRequestAndReturnsTheCreatedTask();
 await failedRetryReusesItsIdempotencyKey();
+await changedDraftAfterFailureGetsANewIdempotencyKey();
+await differentConcurrentDraftIsNotSilentlyCoalesced();
+createdTaskInvalidatesAnOlderListCommit();
 mergeKeepsARepeatedSuccessToOneVisibleTask();
 console.log("tasks.test.ts: all checks passed");

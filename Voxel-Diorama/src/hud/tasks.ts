@@ -84,17 +84,22 @@ export function createTaskSubmitter(
   companyId: string,
   makeKey: () => string = () => crypto.randomUUID(),
 ) {
-  let retryKey: string | undefined;
-  let inFlight: Promise<SubmitResult> | undefined;
+  let retry: { fingerprint: string; key: string } | undefined;
+  let inFlight: { fingerprint: string; promise: Promise<SubmitResult> } | undefined;
 
   return {
     submit(draft: TaskDraft): Promise<SubmitResult> {
       const errors = validateDraft(draft);
       if (Object.keys(errors).length) return Promise.resolve({ ok: false, errors });
-      if (inFlight) return inFlight;
+      const payload = { title: draft.title.trim(), priority: draft.priority as TaskPriority };
+      const fingerprint = JSON.stringify(payload);
+      if (inFlight) {
+        if (inFlight.fingerprint === fingerprint) return inFlight.promise;
+        return Promise.reject(new Error("다른 업무 생성이 진행 중입니다."));
+      }
 
-      retryKey ??= makeKey();
-      const key = retryKey;
+      if (retry?.fingerprint !== fingerprint) retry = { fingerprint, key: makeKey() };
+      const key = retry.key;
       const request = (async (): Promise<SubmitResult> => {
         const data = await expectJson(await fetcher(taskPath(companyId), {
           method: "POST",
@@ -103,31 +108,40 @@ export function createTaskSubmitter(
             "Idempotency-Key": key,
           },
           body: JSON.stringify({
-            title: draft.title.trim(),
+            ...payload,
             status: "backlog",
-            priority: draft.priority,
             idempotencyKey: key,
           }),
         }));
         const task = parseTask(data);
-        retryKey = undefined;
+        if (retry?.fingerprint === fingerprint) retry = undefined;
         return { ok: true, task };
       })();
 
-      inFlight = request;
+      const activeRequest = { fingerprint, promise: request };
+      inFlight = activeRequest;
       request.then(
         () => {
-          inFlight = undefined;
+          if (inFlight === activeRequest) inFlight = undefined;
         },
         () => {
-          inFlight = undefined;
+          if (inFlight === activeRequest) inFlight = undefined;
         },
       );
       return request;
     },
+  };
+}
 
-    reset() {
-      if (!inFlight) retryKey = undefined;
+export function createTaskListCommitGate() {
+  let revision = 0;
+  return {
+    beginLoad() {
+      const loadRevision = ++revision;
+      return () => loadRevision === revision;
+    },
+    invalidate() {
+      revision += 1;
     },
   };
 }

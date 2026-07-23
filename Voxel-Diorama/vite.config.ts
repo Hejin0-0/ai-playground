@@ -2,6 +2,9 @@ import { defineConfig } from "vite";
 import { paperclipProxy } from "./bridge/paperclipProxy.ts";
 
 export default defineConfig({
+  define: {
+    __PAPERCLIP_COMPANY_ID__: JSON.stringify(process.env.PAPERCLIP_COMPANY_ID ?? ""),
+  },
   plugins: [
     paperclipProxy({
       prefix: "/api",

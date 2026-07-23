@@ -1,0 +1,189 @@
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+
+@layer app {
+  :root {
+    color: var(--color-text-primary);
+    background: var(--color-background-body);
+  }
+
+  body {
+    min-width: 320px;
+    margin: 0;
+    background: var(--color-background-body);
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  .app-header {
+    display: flex;
+    min-height: 64px;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-4);
+    padding: 0 var(--spacing-5);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-background-surface);
+  }
+
+  .app-header > div,
+  .page-heading > div,
+  .section-heading > div {
+    display: grid;
+    gap: var(--spacing-1);
+  }
+
+  .page {
+    display: grid;
+    width: min(100%, 1240px);
+    margin: 0 auto;
+    gap: var(--spacing-6);
+  }
+
+  .page-heading,
+  .section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--spacing-4);
+  }
+
+  .page-heading h1,
+  .section-heading h2,
+  .create-form h2 {
+    margin: 0;
+  }
+
+  .page-heading p,
+  .create-form p,
+  .state-panel p {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+
+  .eyebrow {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    align-items: start;
+    gap: var(--spacing-5);
+  }
+
+  .workspace > section {
+    display: grid;
+    min-width: 0;
+    gap: var(--spacing-3);
+  }
+
+  .create-form,
+  .state-panel {
+    display: grid;
+    gap: var(--spacing-4);
+  }
+
+  .task-table-wrap {
+    overflow-x: auto;
+  }
+
+  .task-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .task-table th,
+  .task-table td {
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+
+  .task-table th {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .task-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .task-id {
+    color: var(--color-text-accent);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .form-message {
+    padding: var(--spacing-3);
+    border-radius: var(--radius-element);
+  }
+
+  .form-message.error {
+    color: var(--color-error);
+    background: var(--color-error-muted);
+  }
+
+  .form-message.success {
+    color: var(--color-success);
+    background: var(--color-success-muted);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 800px) {
+    .workspace {
+      grid-template-columns: 1fr;
+    }
+
+    .page-heading {
+      align-items: start;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .app-header,
+    .page-heading {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .app-header {
+      padding-block: var(--spacing-3);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

@@ -14,6 +14,7 @@ import { createServer as createViteServer } from "vite";
 import { paperclipProxy } from "./paperclipProxy.ts";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const NO_DEP_DISCOVERY = { noDiscovery: true };
 
 interface Reply {
   status: number;
@@ -88,6 +89,7 @@ async function primaryScenarios() {
 
   const server = await createViteServer({
     root: ROOT,
+    optimizeDeps: NO_DEP_DISCOVERY,
     configFile: path.join(ROOT, "vite.config.ts"),
     server: { port: await freePort(), strictPort: true },
   });
@@ -163,6 +165,7 @@ async function primaryScenarios() {
     const deadPort = await freePort();
     const deadServer = await createViteServer({
       root: ROOT,
+      optimizeDeps: NO_DEP_DISCOVERY,
       configFile: false,
       server: { host: "127.0.0.1", port: await freePort(), strictPort: true },
       plugins: [paperclipProxy({ prefix: "/api", target: `http://127.0.0.1:${deadPort}` })],
@@ -199,6 +202,7 @@ async function upstreamTimeoutReturns504() {
 
   const server = await createViteServer({
     root: ROOT,
+    optimizeDeps: NO_DEP_DISCOVERY,
     configFile: false,
     server: { host: "127.0.0.1", port: await freePort(), strictPort: true },
     plugins: [paperclipProxy({ prefix: "/api", target: `http://127.0.0.1:${addr.port}`, timeoutMs: 200 })],
@@ -238,6 +242,7 @@ async function crossSchemeOriginIsRejectedDespiteMatchingHost() {
   const upstream = await startMockUpstream();
   const server = await createViteServer({
     root: ROOT,
+    optimizeDeps: NO_DEP_DISCOVERY,
     configFile: false,
     server: { host: "127.0.0.1", port: await freePort(), strictPort: true },
     plugins: [paperclipProxy({ prefix: "/api", target: upstream.url })],
@@ -270,6 +275,7 @@ async function ledgerKeyEncodingPreventsPathKeyCollision() {
   const upstream = await startMockUpstream();
   const server = await createViteServer({
     root: ROOT,
+    optimizeDeps: NO_DEP_DISCOVERY,
     configFile: false,
     server: { host: "127.0.0.1", port: await freePort(), strictPort: true },
     plugins: [paperclipProxy({ prefix: "/api", target: upstream.url })],
@@ -312,6 +318,7 @@ async function partialBodyReleasesPendingClaimInsteadOfHangingForever() {
   const upstream = await startMockUpstream();
   const server = await createViteServer({
     root: ROOT,
+    optimizeDeps: NO_DEP_DISCOVERY,
     configFile: false,
     server: { host: "127.0.0.1", port: await freePort(), strictPort: true },
     plugins: [paperclipProxy({ prefix: "/api", target: upstream.url, timeoutMs: 200 })],
