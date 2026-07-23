@@ -387,6 +387,12 @@ Voxel-Diorama/
    <!-- VOX-21(Claude 교차 QA)이 잡은 비블로커. 완료 조건 '재시도 중복 없음'의 핵심 약속을 건드리나, v0.1은 loopback(127.0.0.1) 통신이라 '서버 성공+클라 네트워크 오류' 트리거가 사실상 발생 안 함 → 백로그. 흔한 경합(동시 제출·지연 GET)은 실측 PASS. -->
 8. 업무 생성 **companyId 빈 값 시 발주 폼 미비활성** — `PAPERCLIP_COMPANY_ID` 누락 시 목록은 명시 에러를 내지만 우측 발주 폼은 살아 있어 제출하면 `/api/companies//issues`로 POST됨. 개선안: companyId 없을 때 발주 폼 disable/제출 가드. 트러스트 경계(설정 누락) 입력 검증 일관성.
    <!-- VOX-21(Claude 교차 QA) 비블로커. 트리거가 빌드 설정 누락(이미 목록 에러 표시)이라 무해에 가깝고 malformed POST는 실패할 뿐 → 백로그. 폼 2줄 가드로 해소 가능. -->
+9. 여행 시작 **save 실패→동일 key 회복 영구 회귀 테스트 부재 (test debt)** — `tripsApi`의 save 1회 실패 후 동일 idempotency-key 재시도 회복(업스트림 `trip:K` 멱등 의존)은 scratch 재현·Claude 크로스-리뷰로 PASS 확인됐으나 영구 테스트가 없음. `tripsApi.test.ts` mock이 같은 업스트림 key 재시도에 새 이슈를 생성(Paperclip 멱등 미모델링). 개선안: mock에 업스트림 멱등 반영 + 위 인터리빙 회귀 테스트 추가.
+   <!-- VOX-23(Codex Terra QA) 후속. 기능은 동작하나 리팩터 시 회복이 깨져도 잡을 테스트가 없음 → v0.1 허용 test debt. -->
+10. 여행 시작 **`tripsApi.ts` readBody 크기 상한 없음** — 빠른 경로(201 멱등 replay / 409 active 존재)로 응답한 뒤에도 `readBody`가 백그라운드에서 body를 계속 소비, 큰 느린 본문이 응답 후에도 최대 10초 버퍼/타이머 유지. 로컬 가용성/자원 위험. 개선안: readBody에 최대 바이트 상한(초과 시 413) + 빠른 경로에서 미사용 body 조기 파기.
+   <!-- VOX-23(Codex Terra QA) 후속. loopback·단일 사용자 v0.1에선 실위험 낮음 → 백로그. -->
+11. 승인 액션 **인간 vs 에이전트 인증 게이트 (Phase 2 하드닝)** — `/api/tasks/:id/review` 브리지는 same-origin을 요구하나 `isSameOrigin`이 Origin 헤더 없는 요청을 신뢰(비브라우저 호출 허용 설계) → 로컬 비브라우저 프로세스가 approve/reject를 구동 가능. D4(승인=인간 전용)의 기술 게이트가 없음. **단 새 공격면 아님**: 에이전트는 이미 Paperclip 네이티브 `/api/approvals/{id}/approve`에 직접 접근 가능 → local_trusted 모드의 내재 속성. 개선안: 게임 UI만 보유하는 로컬 세션 토큰을 `/review`(및 승인 액션)에 요구. 격리 워크스페이스·low_trust_review와 같은 Phase 2 트러스트 하드닝 티어.
+   <!-- VOX-14 승인 시 Claude 크로스-리뷰가 발견(구현자·Terra 미명시). v0.1 D4 집행은 거버넌스(AGENTS.md 자가승인 금지)+인간이 실제 조작자라는 사실 → 기록만, 지금 블로커 아님. -->
 
 
 **v2 후보**: 관광 모드(섬·행성 보행) · 스냅샷 공개 퍼블리시(관전) · Slack 지시 채널 · GR 테마 · 물리 파편 붕괴.
