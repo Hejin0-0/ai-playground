@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "node bridge/idempotency.test.ts && node bridge/proxy.e2e.test.ts && node src/state/worldStateStore.test.ts"
+    "test": "node bridge/idempotency.test.ts && node bridge/proxy.e2e.test.ts && node src/state/worldStateStore.test.ts && node src/hud/tasks.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
