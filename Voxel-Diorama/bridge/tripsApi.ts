@@ -71,10 +71,20 @@ export function tripsApi({
   const idempotency = new IdempotencyStore();
   let queue: Promise<void> = Promise.resolve();
 
-  async function startTrip(title: string, key: string): Promise<CachedResponse> {
+  async function startTrip(body: Promise<Buffer>, key: string): Promise<CachedResponse> {
     const state = (await store.load()) ?? initialState();
+    if (state.tripStartIdempotencyKey === key && state.activeTrip != null) {
+      return json(201, state.activeTrip);
+    }
     if (state.activeTrip != null) {
       return json(409, { error: "active_trip_exists", message: "an active trip already exists" });
+    }
+    const title = parseTitle(await body);
+    if (!title) {
+      return json(400, {
+        error: "invalid_request",
+        message: "body must be JSON with a non-empty title",
+      });
     }
     if (!companyId) {
       return json(503, { error: "paperclip_not_configured", message: "PAPERCLIP_COMPANY_ID is required" });
@@ -122,7 +132,7 @@ export function tripsApi({
       startedAt: new Date().toISOString(),
       active: true,
     };
-    await store.save({ ...state, activeTrip: trip });
+    await store.save({ ...state, activeTrip: trip, tripStartIdempotencyKey: key });
     return json(201, trip);
   }
 
@@ -154,22 +164,15 @@ export function tripsApi({
         }
 
         const settle = idempotency.begin(key);
+        const body = readBody(req, timeoutMs);
+        body.catch(() => {});
         try {
-          const title = parseTitle(await readBody(req, timeoutMs));
-          let response: CachedResponse;
-          if (!title) {
-            response = json(400, {
-              error: "invalid_request",
-              message: "body must be JSON with a non-empty title",
-            });
-          } else {
-            const run = queue.then(() => startTrip(title, key));
-            queue = run.then(
-              () => undefined,
-              () => undefined,
-            );
-            response = await run;
-          }
+          const run = queue.then(() => startTrip(body, key));
+          queue = run.then(
+            () => undefined,
+            () => undefined,
+          );
+          const response = await run;
           settle.resolve(response);
           write(res, response);
         } catch (error) {

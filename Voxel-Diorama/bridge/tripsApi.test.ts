@@ -102,7 +102,7 @@ async function validRequestCreatesOneRootAndPersistsOneTrip() {
       await fs.rename(from, to);
     };
     const store = new WorldStateStore(file, { rename });
-    const api = await startApi(paperclip.url, store);
+    let api = await startApi(paperclip.url, store);
 
     try {
       const first = await request(`${api.base}/api/trips`, "trip-key", JSON.stringify({ title: "첫 여행" }));
@@ -131,6 +131,19 @@ async function validRequestCreatesOneRootAndPersistsOneTrip() {
       assert.equal(trip.themeId, "base");
       assert.equal(trip.active, true);
       assert.ok(!Number.isNaN(Date.parse(trip.startedAt)), "startedAt must be an ISO date");
+
+      await api.server.close();
+      api = await startApi(paperclip.url, new WorldStateStore(file));
+      const restartedReplay = await request(
+        `${api.base}/api/trips`,
+        "trip-key",
+        '{"title":',
+      );
+      assert.deepEqual(restartedReplay, first, "the same key must replay the first response after restart");
+      assert.equal(paperclip.payloads.length, 1, "restart replay must not create another root issue");
+
+      const conflict = await request(`${api.base}/api/trips`, "another-key", '{"title":');
+      assert.equal(conflict.status, 409, "an active trip must win over validation for a different key");
     } finally {
       await api.server.close();
       await paperclip.close();
