@@ -79,13 +79,37 @@ function forwardToUpstream(
   body: Buffer,
   timeoutMs: number,
 ): Promise<CachedResponse> {
+  return forwardRequest(
+    target,
+    {
+      method: req.method ?? "GET",
+      path: req.url ?? "/",
+      headers: req.headers,
+      body,
+    },
+    timeoutMs,
+  );
+}
+
+interface UpstreamRequest {
+  method: string;
+  path: string;
+  headers: http.IncomingHttpHeaders;
+  body: Buffer;
+}
+
+function forwardRequest(target: string, request: UpstreamRequest, timeoutMs: number): Promise<CachedResponse> {
   return new Promise((resolve, reject) => {
-    const targetUrl = new URL(req.url ?? "/", target);
+    const targetUrl = new URL(request.path, target);
+    const headers = { ...request.headers, host: targetUrl.host };
+    delete headers["content-length"];
+    delete headers["transfer-encoding"];
+    if (request.body.length) headers["content-length"] = String(request.body.length);
     const upstreamReq = http.request(
       targetUrl,
       {
-        method: req.method,
-        headers: { ...req.headers, host: targetUrl.host },
+        method: request.method,
+        headers,
         timeout: timeoutMs,
       },
       (upstreamRes) => {
@@ -103,13 +127,110 @@ function forwardToUpstream(
     );
     upstreamReq.on("timeout", () => upstreamReq.destroy(new Error("upstream_timeout")));
     upstreamReq.on("error", reject);
-    upstreamReq.end(body);
+    upstreamReq.end(request.body);
   });
 }
 
 function writeCached(res: ServerResponse, cached: CachedResponse) {
   res.writeHead(cached.status, cached.headers);
   res.end(cached.body);
+}
+
+function jsonResponse(status: number, code: string, message: string): CachedResponse {
+  const body = Buffer.from(JSON.stringify({ error: code, message }));
+  return {
+    status,
+    headers: {
+      "content-type": "application/json",
+      "content-length": String(body.length),
+    },
+    body,
+  };
+}
+
+const REVIEW_PATH = /^\/api\/tasks\/([^/]+)\/review$/;
+
+async function forwardReview(
+  req: IncomingMessage,
+  target: string,
+  body: Buffer,
+  timeoutMs: number,
+): Promise<CachedResponse> {
+  const pathname = new URL(req.url ?? "/", "http://local").pathname;
+  const match = pathname.match(REVIEW_PATH);
+  if (!match) return forwardToUpstream(req, target, body, timeoutMs);
+
+  let taskId: string;
+  let payload: unknown;
+  try {
+    taskId = decodeURIComponent(match[1]);
+    payload = JSON.parse(body.toString());
+  } catch {
+    return jsonResponse(400, "invalid_review_request", "review body must be valid JSON");
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return jsonResponse(400, "invalid_review_request", "review body must be an object");
+  }
+  const input = payload as Record<string, unknown>;
+  const decision = input.decision;
+  const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+  if (decision !== "approve" && decision !== "reject" && decision !== "request_changes") {
+    return jsonResponse(400, "invalid_review_decision", "decision must be approve, reject, or request_changes");
+  }
+  if ((decision === "reject" || decision === "request_changes") && !reason) {
+    return jsonResponse(400, "review_reason_required", "reject and request_changes require a reason");
+  }
+
+  const approvalsResponse = await forwardRequest(
+    target,
+    {
+      method: "GET",
+      path: `/api/issues/${encodeURIComponent(taskId)}/approvals`,
+      headers: req.headers,
+      body: Buffer.alloc(0),
+    },
+    timeoutMs,
+  );
+  if (approvalsResponse.status < 200 || approvalsResponse.status >= 300) return approvalsResponse;
+
+  let approvals: unknown;
+  try {
+    approvals = JSON.parse(approvalsResponse.body.toString());
+  } catch {
+    return jsonResponse(502, "invalid_upstream_response", "Paperclip returned invalid approval JSON");
+  }
+  if (!Array.isArray(approvals)) {
+    return jsonResponse(502, "invalid_upstream_response", "Paperclip returned an invalid approval list");
+  }
+  const approval = approvals.find(
+    (candidate) =>
+      candidate &&
+      typeof candidate === "object" &&
+      typeof (candidate as Record<string, unknown>).id === "string" &&
+      ((candidate as Record<string, unknown>).status === "pending" ||
+        (decision !== "request_changes" && (candidate as Record<string, unknown>).status === "revision_requested")),
+  ) as Record<string, unknown> | undefined;
+  if (!approval) {
+    return jsonResponse(
+      409,
+      "linked_pending_approval_not_found",
+      "the task has no linked approval awaiting this decision",
+    );
+  }
+
+  const action = decision === "request_changes" ? "request-revision" : decision;
+  const decisionBody = Buffer.from(JSON.stringify({ decisionNote: reason || null }));
+  return forwardRequest(
+    target,
+    {
+      method: "POST",
+      path: `/api/approvals/${encodeURIComponent(String(approval.id))}/${action}`,
+      headers: { ...req.headers, "content-type": "application/json" },
+      body: decisionBody,
+    },
+    timeoutMs,
+  );
 }
 
 interface PaperclipProxyOptions {
@@ -226,7 +347,7 @@ export function paperclipProxy({ prefix, target, timeoutMs = UPSTREAM_TIMEOUT_MS
         const settle = store.begin(key);
         try {
           const body = await readBody(req, timeoutMs);
-          const response = await forwardToUpstream(req, target, body, timeoutMs);
+          const response = await forwardReview(req, target, body, timeoutMs);
           settle.resolve(response);
           writeCached(res, response);
         } catch (err) {

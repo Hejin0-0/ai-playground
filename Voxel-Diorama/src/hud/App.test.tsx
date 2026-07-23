@@ -41,8 +41,22 @@ function rowsShowTheRequiredFields() {
   }
 }
 
+function rowSelectionExposesTheDetailEntryPoint() {
+  const html = renderToStaticMarkup(
+    <TaskList
+      state={{ kind: "ready", tasks: [task] }}
+      onRetry={() => {}}
+      selectedTaskId={task.id}
+      onSelect={() => {}}
+    />,
+  );
+  assert.match(html, /aria-selected="true"/);
+  assert.match(html, /<button[^>]*>Phase 2-3 Astryx 업무 목록·생성 화면<\/button>/);
+}
+
 loadingIsAnnounced();
 emptyIsExplicit();
 errorOffersRetry();
 rowsShowTheRequiredFields();
+rowSelectionExposesTheDetailEntryPoint();
 console.log("App.test.tsx: all checks passed");

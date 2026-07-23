@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "dev": "vite",
-    "test": "node bridge/idempotency.test.ts && node bridge/proxy.e2e.test.ts && node src/state/worldStateStore.test.ts && node src/hud/tasks.test.ts && tsx src/hud/App.test.tsx"
+    "test": "node bridge/idempotency.test.ts && node bridge/proxy.e2e.test.ts && node bridge/reviewProxy.e2e.test.ts && node src/state/worldStateStore.test.ts && node src/hud/tasks.test.ts && node src/hud/review.test.ts && tsx src/hud/App.test.tsx"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

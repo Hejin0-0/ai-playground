@@ -6,6 +6,7 @@ import { Selector, type SelectorOptionData } from "@astryxdesign/core/Selector";
 import { Skeleton } from "@astryxdesign/core/Skeleton";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { ReviewPanel } from "./ReviewPanel.tsx";
 import {
   createTaskListCommitGate,
   createTaskSubmitter,
@@ -62,7 +63,17 @@ export type TaskListState =
   | { kind: "error"; message: string }
   | { kind: "ready"; tasks: Task[] };
 
-export function TaskList({ state, onRetry }: { state: TaskListState; onRetry: () => void }) {
+export function TaskList({
+  state,
+  onRetry,
+  selectedTaskId,
+  onSelect,
+}: {
+  state: TaskListState;
+  onRetry: () => void;
+  selectedTaskId?: string | null;
+  onSelect?: (task: Task) => void;
+}) {
   if (state.kind === "loading") {
     return (
       <Card>
@@ -114,9 +125,17 @@ export function TaskList({ state, onRetry }: { state: TaskListState; onRetry: ()
           </thead>
           <tbody>
             {state.tasks.map((task) => (
-              <tr key={task.id}>
+              <tr key={task.id} aria-selected={onSelect ? task.id === selectedTaskId : undefined}>
                 <td className="task-id">{task.identifier}</td>
-                <td>{task.title}</td>
+                <td>
+                  {onSelect ? (
+                    <button className="task-title-button" type="button" onClick={() => onSelect(task)}>
+                      {task.title}
+                    </button>
+                  ) : (
+                    task.title
+                  )}
+                </td>
                 <td>
                   <Badge variant={STATUS_VARIANTS[task.status]} label={STATUS_LABELS[task.status]} />
                 </td>
@@ -143,6 +162,7 @@ export function App({ companyId }: { companyId: string }) {
   const [submitError, setSubmitError] = useState("");
   const [createdMessage, setCreatedMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const submitter = useMemo(() => createTaskSubmitter(fetch, companyId), [companyId]);
   const listCommitGate = useMemo(createTaskListCommitGate, []);
 
@@ -157,7 +177,10 @@ export function App({ companyId }: { companyId: string }) {
     }
     try {
       const tasks = await listTasks(fetch, companyId);
-      if (shouldCommit()) setListState({ kind: "ready", tasks });
+      if (shouldCommit()) {
+        setSelectedTaskId((current) => (tasks.some((task) => task.id === current) ? current : null));
+        setListState({ kind: "ready", tasks });
+      }
     } catch (error) {
       if (shouldCommit()) {
         setListState({ kind: "error", message: error instanceof Error ? error.message : "알 수 없는 오류" });
@@ -195,12 +218,16 @@ export function App({ companyId }: { companyId: string }) {
       setDraft({ title: "", priority: "" });
       setFieldErrors({});
       setCreatedMessage(`${result.task.identifier} 업무를 만들었습니다.`);
+      setSelectedTaskId(result.task.id);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "업무 생성에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
     }
   }
+
+  const selectedTask =
+    listState.kind === "ready" ? listState.tasks.find((task) => task.id === selectedTaskId) : undefined;
 
   return (
     <AppShell
@@ -223,7 +250,7 @@ export function App({ companyId }: { companyId: string }) {
           <div>
             <p className="eyebrow">PHASE 2 · 2D BOOTSTRAP</p>
             <h1>업무 운영</h1>
-            <p>Paperclip의 실제 업무를 확인하고 새 결과물 업무를 발주합니다.</p>
+            <p>Paperclip의 실제 업무를 확인하고 결과물 업무를 발주·검수합니다.</p>
           </div>
           <Button label="목록 새로고침" variant="ghost" onClick={() => void load()} />
         </header>
@@ -237,7 +264,13 @@ export function App({ companyId }: { companyId: string }) {
               </div>
               {listState.kind === "ready" && <span>{listState.tasks.length}건</span>}
             </div>
-            <TaskList state={listState} onRetry={() => void load()} />
+            <TaskList
+              state={listState}
+              onRetry={() => void load()}
+              selectedTaskId={selectedTaskId}
+              onSelect={(task) => setSelectedTaskId(task.id)}
+            />
+            {selectedTask && <ReviewPanel key={selectedTask.id} task={selectedTask} onTaskRefresh={load} />}
           </section>
 
           <aside aria-labelledby="create-task-heading">
