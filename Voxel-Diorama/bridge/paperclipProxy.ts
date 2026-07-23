@@ -24,7 +24,7 @@ function sendUpstreamError(res: ServerResponse, status: number, code: string, me
 // Rejects if the body doesn't finish within `timeoutMs` — a client that
 // declares a Content-Length it never delivers would otherwise leave `data`
 // listeners (and the caller's idempotency claim) attached forever.
-function readBody(req: IncomingMessage, timeoutMs: number): Promise<Buffer> {
+export function readBody(req: IncomingMessage, timeoutMs: number): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     const onData = (c: Buffer) => chunks.push(c);
@@ -58,7 +58,7 @@ function readBody(req: IncomingMessage, timeoutMs: number): Promise<Buffer> {
 // cross-site fetch/XHR, so a non-browser client (curl, server-to-server)
 // has no Origin to spoof and this dev-only proxy trusts its absence rather
 // than blocking legitimate non-browser callers.
-function isSameOrigin(req: IncomingMessage): boolean {
+export function isSameOrigin(req: IncomingMessage): boolean {
   const origin = req.headers.origin;
   if (!origin) return true;
   let parsed: URL;
