@@ -6,6 +6,8 @@ import { Selector, type SelectorOptionData } from "@astryxdesign/core/Selector";
 import { Skeleton } from "@astryxdesign/core/Skeleton";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { Island } from "../island/Island.tsx";
+import { useActiveTrip } from "../state/useActiveTrip.ts";
 import { ReviewPanel } from "./ReviewPanel.tsx";
 import {
   createTaskListCommitGate,
@@ -163,6 +165,7 @@ export function App({ companyId }: { companyId: string }) {
   const [createdMessage, setCreatedMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const activeTrip = useActiveTrip();
   const submitter = useMemo(() => createTaskSubmitter(fetch, companyId), [companyId]);
   const listCommitGate = useMemo(createTaskListCommitGate, []);
 
@@ -254,6 +257,17 @@ export function App({ companyId }: { companyId: string }) {
           </div>
           <Button label="목록 새로고침" variant="ghost" onClick={() => void load()} />
         </header>
+
+        <section aria-labelledby="island-heading" className="island-section">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">PHASE 3 · ISOMETRIC ISLAND</p>
+              <h2 id="island-heading">여행 섬</h2>
+            </div>
+            {activeTrip && <span>진행 중</span>}
+          </div>
+          <Island activeTrip={activeTrip} />
+        </section>
 
         <div className="workspace">
           <section aria-labelledby="task-list-heading">

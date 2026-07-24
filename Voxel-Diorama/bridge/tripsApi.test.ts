@@ -13,6 +13,18 @@ interface Reply {
   body: string;
 }
 
+function get(url: string): Promise<Reply> {
+  return new Promise((resolve, reject) => {
+    const req = http.request(url, { method: "GET" }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk) => chunks.push(chunk));
+      res.on("end", () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString() }));
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
+
 function request(url: string, key: string, body: string): Promise<Reply> {
   return new Promise((resolve, reject) => {
     const req = http.request(
@@ -200,7 +212,32 @@ async function concurrentStartsStillCreateOnlyOneActiveTrip() {
   });
 }
 
+async function getReturnsActiveTripForPolling() {
+  await withTempDir(async (dir) => {
+    const paperclip = await startPaperclip();
+    const file = path.join(dir, "world-state.json");
+    const api = await startApi(paperclip.url, new WorldStateStore(file));
+
+    try {
+      const empty = await get(`${api.base}/api/trips`);
+      assert.equal(empty.status, 200, "GET must succeed with no active trip");
+      assert.deepEqual(JSON.parse(empty.body), { activeTrip: null });
+
+      const started = await request(`${api.base}/api/trips`, "poll-key", JSON.stringify({ title: "여행" }));
+      const trip = JSON.parse(started.body);
+
+      const populated = await get(`${api.base}/api/trips`);
+      assert.equal(populated.status, 200);
+      assert.deepEqual(JSON.parse(populated.body), { activeTrip: trip }, "GET must reflect the started trip");
+    } finally {
+      await api.server.close();
+      await paperclip.close();
+    }
+  });
+}
+
 await validRequestCreatesOneRootAndPersistsOneTrip();
 await fourXxResponsesLeaveWorldStateByteIdentical();
 await concurrentStartsStillCreateOnlyOneActiveTrip();
+await getReturnsActiveTripForPolling();
 console.log("tripsApi.test.ts: all checks passed");

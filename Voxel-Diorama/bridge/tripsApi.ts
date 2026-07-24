@@ -140,7 +140,16 @@ export function tripsApi({
     name: "trips-api",
     configureServer(server) {
       server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next) => {
-        if (req.method !== "POST" || req.url?.split("?")[0] !== ROUTE) return next();
+        if (req.url?.split("?")[0] !== ROUTE) return next();
+
+        if (req.method === "GET") {
+          const state = (await store.load().catch(() => undefined)) ?? initialState();
+          const response = json(200, { activeTrip: state.activeTrip ?? null });
+          response.headers["cache-control"] = "no-store";
+          return write(res, response);
+        }
+
+        if (req.method !== "POST") return next();
         if (!isSameOrigin(req)) {
           return write(res, json(403, { error: "cross_origin_forbidden", message: "writes require a same-origin request" }));
         }
