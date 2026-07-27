@@ -1,10 +1,11 @@
+import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import type { ActiveTrip } from "../state/useActiveTrip.ts";
 
 // Phase 3-1 greybox: a flat isometric island rendered from grey primitives.
 // Kenney asset swap is a follow-up (PLAN §Phase 3 · D8 greybox-first).
 // Fixed isometric orthographic camera at (1,1,1) → 35.26° elevation / 45°
-// azimuth, looking at the origin — no orbit controls (D15 fixed camera).
+// azimuth, looking at the origin. Pan/zoom are allowed; rotation is not (D15).
 
 const GROUND = "#7d828c";
 const PLOT = "#aeb4bf";
@@ -47,6 +48,7 @@ export function Island({ activeTrip }: { activeTrip: ActiveTrip | null }) {
       >
         <ambientLight intensity={0.75} />
         <directionalLight position={[6, 12, 4]} intensity={0.9} />
+        <OrbitControls enableRotate={false} enablePan={true} enableZoom={true} />
         {activeTrip && (
           <>
             <Ground />
