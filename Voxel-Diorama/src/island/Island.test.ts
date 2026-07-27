@@ -12,4 +12,10 @@ const index = await fs.readFile(new URL("../../index.html", import.meta.url), "u
 assert.match(index, /<link rel="icon" href="\/favicon\.svg"\s*\/>/);
 await fs.access(new URL("../../public/favicon.svg", import.meta.url));
 
+const app = await fs.readFile(new URL("../hud/App.tsx", import.meta.url), "utf8");
+assert.match(app, /setTimeout\(poll,\s*5_000\)/, "task projection must poll every five seconds without overlap");
+assert.match(app, /document\.visibilityState === "visible"/, "task polling must pause while the app is hidden");
+assert.match(app, /if \(listLoadRef\.current\) return listLoadRef\.current/, "task loads must share one request");
+assert.match(app, /isDisabled=\{isSubmitting \|\| !activeTrip\}/, "task creation must require an active trip");
+
 console.log("Island.test.ts: all checks passed");

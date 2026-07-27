@@ -9,6 +9,7 @@ interface BuildingTask {
   parentId: string | null;
   status: string;
   priority: TaskPriority | null;
+  completedAt: string | null;
 }
 
 export interface BuildingProjection {
@@ -28,6 +29,7 @@ const PRIORITY_SCORES: Record<TaskPriority, number> = {
 };
 
 export function priorityScore(priority: TaskPriority | null): number {
+  // ponytail: null violates the D10 creation rule; keep it visible but unscored until reconciliation exists.
   return priority ? PRIORITY_SCORES[priority] : 0;
 }
 
@@ -67,12 +69,25 @@ export function projectBuildings(
   tasks: readonly BuildingTask[],
   rootIssueId: string,
 ): BuildingProjection[] {
-  const done = tasks
+  const candidates = tasks
     .filter((task) => task.parentId === rootIssueId && task.status === "done")
-    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    .sort((a, b) => {
+      const aKey = JSON.stringify([a.id, a.parentId, a.status, a.priority, a.completedAt]);
+      const bKey = JSON.stringify([b.id, b.parentId, b.status, b.priority, b.completedAt]);
+      return aKey < bKey ? -1 : aKey > bKey ? 1 : 0;
+    });
+  const done = candidates
+    .filter((task, index) => index === 0 || task.id !== candidates[index - 1].id)
+    .sort((a, b) => {
+      const aCompleted = a.completedAt ?? "";
+      const bCompleted = b.completedAt ?? "";
+      if (aCompleted !== bCompleted) return aCompleted < bCompleted ? -1 : 1;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
   const plots = spiralPlots(done.length);
 
   return done.map((task, index) => {
+    // ponytail: P3-2 has first completions only; VOX-26 adds persisted rework attempt numbers.
     const attemptNumber = 1;
     return {
       issueId: task.id,

@@ -5,7 +5,7 @@ import { Card } from "@astryxdesign/core/Card";
 import { Selector, type SelectorOptionData } from "@astryxdesign/core/Selector";
 import { Skeleton } from "@astryxdesign/core/Skeleton";
 import { TextInput } from "@astryxdesign/core/TextInput";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Island } from "../island/Island.tsx";
 import { useActiveTrip } from "../state/useActiveTrip.ts";
 import { ReviewPanel } from "./ReviewPanel.tsx";
@@ -168,31 +168,54 @@ export function App({ companyId }: { companyId: string }) {
   const activeTrip = useActiveTrip();
   const submitter = useMemo(() => createTaskSubmitter(fetch, companyId), [companyId]);
   const listCommitGate = useMemo(createTaskListCommitGate, []);
+  const listLoadRef = useRef<Promise<void> | null>(null);
 
-  const load = useCallback(async () => {
-    const shouldCommit = listCommitGate.beginLoad();
-    setListState({ kind: "loading" });
-    if (!companyId) {
-      if (shouldCommit()) {
-        setListState({ kind: "error", message: "PAPERCLIP_COMPANY_ID가 설정되지 않았습니다." });
+  const load = useCallback((background = false) => {
+    if (listLoadRef.current) return listLoadRef.current;
+    const request = (async () => {
+      const shouldCommit = listCommitGate.beginLoad();
+      if (!background) setListState({ kind: "loading" });
+      if (!companyId) {
+        if (shouldCommit() && !background) {
+          setListState({ kind: "error", message: "PAPERCLIP_COMPANY_ID가 설정되지 않았습니다." });
+        }
+        return;
       }
-      return;
-    }
-    try {
-      const tasks = await listTasks(fetch, companyId);
-      if (shouldCommit()) {
-        setSelectedTaskId((current) => (tasks.some((task) => task.id === current) ? current : null));
-        setListState({ kind: "ready", tasks });
+      try {
+        const tasks = await listTasks(fetch, companyId);
+        if (shouldCommit()) {
+          setSelectedTaskId((current) => (tasks.some((task) => task.id === current) ? current : null));
+          setListState({ kind: "ready", tasks });
+        }
+      } catch (error) {
+        if (shouldCommit() && !background) {
+          setListState({ kind: "error", message: error instanceof Error ? error.message : "알 수 없는 오류" });
+        }
       }
-    } catch (error) {
-      if (shouldCommit()) {
-        setListState({ kind: "error", message: error instanceof Error ? error.message : "알 수 없는 오류" });
-      }
-    }
+    })();
+    listLoadRef.current = request;
+    void request.finally(() => {
+      if (listLoadRef.current === request) listLoadRef.current = null;
+    });
+    return request;
   }, [companyId, listCommitGate]);
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      if (document.visibilityState === "visible") await load(true);
+      if (!cancelled) timer = setTimeout(poll, 5_000);
+    };
+    timer = setTimeout(poll, 5_000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [load]);
 
   function changeDraft(next: TaskDraft) {
@@ -208,7 +231,8 @@ export function App({ companyId }: { companyId: string }) {
     setSubmitError("");
     setCreatedMessage("");
     try {
-      const result = await submitter.submit(draft);
+      if (!activeTrip) throw new Error("활성 여행을 먼저 시작하세요.");
+      const result = await submitter.submit(draft, activeTrip.rootIssueId);
       if (!result.ok) {
         setFieldErrors(result.errors);
         return;
@@ -266,7 +290,7 @@ export function App({ companyId }: { companyId: string }) {
             </div>
             {activeTrip && <span>진행 중</span>}
           </div>
-          <Island activeTrip={activeTrip} />
+          <Island activeTrip={activeTrip} tasks={listState.kind === "ready" ? listState.tasks : []} />
         </section>
 
         <div className="workspace">
@@ -336,7 +360,7 @@ export function App({ companyId }: { companyId: string }) {
                   variant="primary"
                   width="100%"
                   isLoading={isSubmitting}
-                  isDisabled={isSubmitting}
+                  isDisabled={isSubmitting || !activeTrip}
                 />
               </form>
             </Card>

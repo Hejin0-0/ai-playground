@@ -118,6 +118,30 @@
     color: var(--color-text-secondary);
   }
 
+  .island-score {
+    position: absolute;
+    top: var(--spacing-3);
+    right: var(--spacing-3);
+    display: grid;
+    min-width: 96px;
+    gap: 2px;
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-element);
+    background: var(--color-background-surface);
+    pointer-events: none;
+  }
+
+  .island-score span,
+  .island-score small {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+  }
+
+  .island-score strong {
+    font-size: 1.25rem;
+  }
+
   .create-form,
   .state-panel {
     display: grid;

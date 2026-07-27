@@ -14,10 +14,12 @@ export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 export interface Task {
   id: string;
+  parentId: string | null;
   identifier: string;
   title: string;
   status: TaskStatus;
   priority: TaskPriority | null;
+  completedAt: string | null;
 }
 
 export interface TaskDraft {
@@ -42,10 +44,12 @@ function parseTask(value: unknown): Task {
   const task = value as Record<string, unknown>;
   if (
     typeof task.id !== "string" ||
+    !(task.parentId === null || typeof task.parentId === "string") ||
     typeof task.identifier !== "string" ||
     typeof task.title !== "string" ||
     !TASK_STATUSES.includes(task.status as TaskStatus) ||
-    !(task.priority === null || TASK_PRIORITIES.includes(task.priority as TaskPriority))
+    !(task.priority === null || TASK_PRIORITIES.includes(task.priority as TaskPriority)) ||
+    !(task.completedAt === null || typeof task.completedAt === "string")
   ) {
     throw new Error("Paperclip 업무 응답 형식이 올바르지 않습니다.");
   }
@@ -67,7 +71,23 @@ async function expectJson(response: Response): Promise<unknown> {
 export async function listTasks(fetcher: Fetcher, companyId: string): Promise<Task[]> {
   const data = await expectJson(await fetcher(taskPath(companyId)));
   if (!Array.isArray(data)) throw new Error("Paperclip 업무 목록 형식이 올바르지 않습니다.");
-  return data.map(parseTask);
+  const unique = new Map<string, { task: Task; fingerprint: string }>();
+  for (const task of data.map(parseTask)) {
+    const fingerprint = JSON.stringify([
+      task.parentId,
+      task.identifier,
+      task.title,
+      task.status,
+      task.priority,
+      task.completedAt,
+    ]);
+    const existing = unique.get(task.id);
+    if (existing && existing.fingerprint !== fingerprint) {
+      throw new Error("Paperclip 업무 목록에 충돌하는 중복 ID가 있습니다.");
+    }
+    unique.set(task.id, { task, fingerprint });
+  }
+  return [...unique.values()].map(({ task }) => task);
 }
 
 function validateDraft(draft: TaskDraft): TaskFieldErrors {
@@ -88,10 +108,15 @@ export function createTaskSubmitter(
   let inFlight: { fingerprint: string; promise: Promise<SubmitResult> } | undefined;
 
   return {
-    submit(draft: TaskDraft): Promise<SubmitResult> {
+    submit(draft: TaskDraft, parentId: string): Promise<SubmitResult> {
       const errors = validateDraft(draft);
       if (Object.keys(errors).length) return Promise.resolve({ ok: false, errors });
-      const payload = { title: draft.title.trim(), priority: draft.priority as TaskPriority };
+      if (!parentId) return Promise.reject(new Error("활성 여행을 먼저 시작하세요."));
+      const payload = {
+        title: draft.title.trim(),
+        priority: draft.priority as TaskPriority,
+        parentId,
+      };
       const fingerprint = JSON.stringify(payload);
       if (inFlight) {
         if (inFlight.fingerprint === fingerprint) return inFlight.promise;

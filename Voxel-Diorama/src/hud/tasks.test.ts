@@ -9,21 +9,42 @@ import {
 
 const existing: Task = {
   id: "issue-1",
+  parentId: "trip-root",
   identifier: "VOX-12",
   title: "World state",
   status: "done",
   priority: "high",
+  completedAt: "2026-07-27T01:00:00.000Z",
 };
 
 async function listUsesTheCompanyProxyAndParsesTasks() {
   let requested = "";
   const tasks = await listTasks(async (input) => {
     requested = String(input);
-    return Response.json([existing]);
+    return Response.json([existing, existing]);
   }, "company/a");
 
   assert.equal(requested, "/api/companies/company%2Fa/issues");
   assert.deepEqual(tasks, [existing]);
+}
+
+async function listRejectsTasksWithoutAParentField() {
+  await assert.rejects(
+    () => listTasks(async () => Response.json([{ ...existing, parentId: undefined }]), "company-1"),
+    /응답 형식/,
+  );
+}
+
+async function listRejectsConflictingDuplicateIds() {
+  const conflict = { ...existing, priority: "low" };
+  await assert.rejects(
+    () => listTasks(async () => Response.json([existing, conflict]), "company-1"),
+    /중복/,
+  );
+  await assert.rejects(
+    () => listTasks(async () => Response.json([conflict, existing]), "company-1"),
+    /중복/,
+  );
 }
 
 async function invalidDraftShowsFieldErrorsWithoutARequest() {
@@ -33,7 +54,7 @@ async function invalidDraftShowsFieldErrorsWithoutARequest() {
     return Response.json({});
   }, "company-1", () => "key-invalid");
 
-  const result = await submitter.submit({ title: "   ", priority: "" });
+  const result = await submitter.submit({ title: "   ", priority: "" }, "trip-root");
 
   assert.equal(requests, 0);
   assert.deepEqual(result, {
@@ -45,15 +66,25 @@ async function invalidDraftShowsFieldErrorsWithoutARequest() {
   });
 }
 
+async function taskCreationRequiresAnActiveTripRoot() {
+  const submitter = createTaskSubmitter(async () => Response.json(existing), "company-1");
+  await assert.rejects(
+    () => submitter.submit({ title: "고아 업무", priority: "medium" }),
+    /활성 여행/,
+  );
+}
+
 async function validDraftSendsOneRequestAndReturnsTheCreatedTask() {
   let requests = 0;
   let requestInit: RequestInit | undefined;
   const created: Task = {
     id: "issue-2",
+    parentId: "trip-root",
     identifier: "VOX-13",
     title: "Astryx 화면",
     status: "backlog",
     priority: "medium",
+    completedAt: null,
   };
   const submitter = createTaskSubmitter(async (_input, init) => {
     requests += 1;
@@ -62,8 +93,8 @@ async function validDraftSendsOneRequestAndReturnsTheCreatedTask() {
   }, "company-1", () => "key-create");
 
   const [first, duplicate] = await Promise.all([
-    submitter.submit({ title: "  Astryx 화면  ", priority: "medium" }),
-    submitter.submit({ title: "  Astryx 화면  ", priority: "medium" }),
+    submitter.submit({ title: "  Astryx 화면  ", priority: "medium" }, "trip-root"),
+    submitter.submit({ title: "  Astryx 화면  ", priority: "medium" }, "trip-root"),
   ]);
 
   assert.equal(requests, 1, "concurrent submits must share one request");
@@ -74,6 +105,7 @@ async function validDraftSendsOneRequestAndReturnsTheCreatedTask() {
     title: "Astryx 화면",
     status: "backlog",
     priority: "medium",
+    parentId: "trip-root",
     idempotencyKey: "key-create",
   });
 }
@@ -89,9 +121,9 @@ async function failedRetryReusesItsIdempotencyKey() {
     return Response.json(existing, { status: 201 });
   }, "company-1", () => generatedKeys.shift() ?? "unexpected");
 
-  await assert.rejects(() => submitter.submit({ title: " 재시도 ", priority: "low" }));
+  await assert.rejects(() => submitter.submit({ title: " 재시도 ", priority: "low" }, "trip-root"));
   await new Promise((resolve) => setTimeout(resolve, 0));
-  const retried = await submitter.submit({ title: "재시도", priority: "low" });
+  const retried = await submitter.submit({ title: "재시도", priority: "low" }, "trip-root");
 
   assert.deepEqual(keys, ["stable-retry-key", "stable-retry-key"]);
   assert.deepEqual(retried, { ok: true, task: existing });
@@ -108,8 +140,8 @@ async function changedDraftAfterFailureGetsANewIdempotencyKey() {
     return Response.json(existing, { status: 201 });
   }, "company-1", () => keys.shift() ?? "unexpected");
 
-  await assert.rejects(() => submitter.submit({ title: "업무 A", priority: "low" }));
-  await submitter.submit({ title: "업무 B", priority: "low" });
+  await assert.rejects(() => submitter.submit({ title: "업무 A", priority: "low" }, "trip-root"));
+  await submitter.submit({ title: "업무 B", priority: "low" }, "trip-root");
 
   assert.deepEqual(sentKeys, ["key-a", "key-b"]);
 }
@@ -121,9 +153,9 @@ async function differentConcurrentDraftIsNotSilentlyCoalesced() {
   });
   const submitter = createTaskSubmitter(() => response, "company-1", () => "key-create");
 
-  const first = submitter.submit({ title: "업무 A", priority: "medium" });
+  const first = submitter.submit({ title: "업무 A", priority: "medium" }, "trip-root");
   await assert.rejects(
-    () => submitter.submit({ title: "업무 B", priority: "medium" }),
+    () => submitter.submit({ title: "업무 B", priority: "medium" }, "trip-root"),
     /다른 업무 생성이 진행 중입니다/,
   );
   finishRequest?.(Response.json(existing, { status: 201 }));
@@ -148,7 +180,10 @@ function mergeKeepsARepeatedSuccessToOneVisibleTask() {
 }
 
 await listUsesTheCompanyProxyAndParsesTasks();
+await listRejectsTasksWithoutAParentField();
+await listRejectsConflictingDuplicateIds();
 await invalidDraftShowsFieldErrorsWithoutARequest();
+await taskCreationRequiresAnActiveTripRoot();
 await validDraftSendsOneRequestAndReturnsTheCreatedTask();
 await failedRetryReusesItsIdempotencyKey();
 await changedDraftAfterFailureGetsANewIdempotencyKey();

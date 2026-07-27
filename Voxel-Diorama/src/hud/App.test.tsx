@@ -1,15 +1,18 @@
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { IslandScore } from "../island/Island.tsx";
 import { TaskList } from "./App.tsx";
 import type { Task } from "./tasks.ts";
 
 const task: Task = {
   id: "issue-13",
+  parentId: "trip-root",
   identifier: "VOX-13",
   title: "Phase 2-3 Astryx 업무 목록·생성 화면",
   status: "in_progress",
   priority: "medium",
+  completedAt: null,
 };
 
 function loadingIsAnnounced() {
@@ -54,9 +57,17 @@ function rowSelectionExposesTheDetailEntryPoint() {
   assert.match(html, /<button[^>]*>Phase 2-3 Astryx 업무 목록·생성 화면<\/button>/);
 }
 
+function islandScoreShowsTheD10Sum() {
+  const html = renderToStaticMarkup(<IslandScore score={75} buildingCount={2} />);
+  assert.match(html, /섬 점수/);
+  assert.match(html, /75점/);
+  assert.match(html, /2동/);
+}
+
 loadingIsAnnounced();
 emptyIsExplicit();
 errorOffersRetry();
 rowsShowTheRequiredFields();
 rowSelectionExposesTheDetailEntryPoint();
+islandScoreShowsTheD10Sum();
 console.log("App.test.tsx: all checks passed");
