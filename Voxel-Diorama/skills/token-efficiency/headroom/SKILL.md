@@ -25,13 +25,37 @@ Voxel-Diorama runs a Paperclip AI workforce where token cost is the recurring bo
 - **Cross-agent memory** — shared store across Claude/Codex/Gemini with auto-dedup.
 - **`headroom learn`** — mines failed sessions and writes corrections into `CLAUDE.md` / `AGENTS.md`. Pairs with our AGENTS.md governance loop.
 
-## Install (follow-up — do before relying on it)
+## Install — verified on this machine (2026-07-27, headroom 0.32.1)
+
 ```bash
-pip install headroom-ai        # or: npm i -g headroom-ai
-headroom --version
-headroom wrap codex            # verify a wrap on our primary implementer first
+pipx install --python /opt/homebrew/bin/python3.13 "headroom-ai[proxy]"
+headroom --version    # -> headroom, version 0.32.1
 ```
-Verify savings with `headroom stats` on a representative task before wiring it into every agent. Pairs with [[rtk-token-killer]] (RTK trims command output at the shell; Headroom compresses everything reaching the model).
+
+Two traps confirmed by actually installing it:
+
+1. **`[proxy]` extras are mandatory, not optional.** A bare `pipx install headroom-ai` installs
+   fine but *every* CLI invocation dies with `ModuleNotFoundError: No module named 'fastapi'` —
+   the `wrap`/`doctor` import chain pulls in `headroom.proxy` unconditionally. Use
+   `"headroom-ai[proxy]"` (brings fastapi, uvicorn, mcp, onnxruntime/Kompress, sqlite-vec).
+2. **The CLI is PyPI-only — pnpm/npm cannot provide it.** The npm package `headroom-ai` is
+   `bin: None` (a TypeScript library exposing `compress()`, and behind: 0.22.4 vs PyPI 0.32.1).
+   Preferring pnpm is right for JS deps but does not apply here; `headroom wrap` ships only in
+   the Python distribution. Needs Python ≥3.10 (macOS system python 3.9 will not do).
+
+## Verified command surface (`headroom --help`)
+`proxy` · `wrap` (hidden but present) · `unwrap` (**roll back a wrap** — the safety exit) ·
+`init` / `install` (durable integrations) · `doctor` (verify proxy + client routing) ·
+`savings` / `agent-savings` / `output-savings` / `dashboard` (measure the actual reduction) ·
+`inspect` (original vs compressed for recent traffic) · `audit-reads` · `learn` · `memory` · `mcp` · `perf`.
+
+## Rollout order for this project
+1. `headroom doctor` — confirm proxy + routing are sane.
+2. Wrap **one** non-critical agent first (Developer/Sonnet worker), not QA and not the D4 approval path.
+3. Measure with `savings` / `agent-savings`; `inspect` a few compressed payloads for fidelity.
+4. Only then widen. `unwrap` is the rollback if verdicts or behavior shift.
+
+Pairs with [[rtk-token-killer]] (RTK trims command output at the shell; Headroom compresses everything reaching the model).
 
 ## Caution
 - Reversible ≠ lossless for the model's view — verify a QA/security-critical task still reaches the same verdict with compression on before trusting it on the D4 approval path.
