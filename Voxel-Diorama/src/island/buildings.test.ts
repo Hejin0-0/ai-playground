@@ -50,6 +50,14 @@ const tasks = [
     approved: false,
   },
   {
+    id: "approval-unknown",
+    parentId: "trip-root",
+    status: "done",
+    priority: "medium",
+    completedAt: "2026-07-27T03:30:00.000Z",
+    approved: null,
+  },
+  {
     id: "no-priority",
     parentId: "trip-root",
     status: "done",
@@ -107,7 +115,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   projection.adjustments.map(({ issueId }) => issueId),
-  ["direct-done", "no-priority"],
+  ["direct-done", "approval-unknown", "no-priority"],
   "unreviewed or unprioritized done tasks become adjustment markers, not buildings",
 );
 assert.equal(totalScore(buildings), 75, "adjustment markers must not contribute points");

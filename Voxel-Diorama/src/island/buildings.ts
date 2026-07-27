@@ -108,7 +108,7 @@ export function projectIsland(
       task.approved === true && task.priority !== null,
   );
   const adjustments = done.filter(
-    (task) => task.approved === false || task.priority === null,
+    (task) => task.approved !== true || task.priority === null,
   );
   const plots = spiralPlots(buildable.length + adjustments.length);
 
