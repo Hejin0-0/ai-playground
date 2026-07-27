@@ -22,6 +22,14 @@
 
 > 미복사 창고 자원 카탈로그(TRELLIS 등)와 라이선스 주의 항목(meshflow 비상업 등)은 `skills/README.md` 참조.
 
+## 지오-데이터 (복사 사용 — 데이터, 코드 아님)
+
+| 소스 | 라이선스 | 위치 |
+|---|---|---|
+| OpenStreetMap (Overpass API 경유) | ODbL 1.0 — © OpenStreetMap contributors | `tools/geo/geo-truth.kyoto.json` (교토 랜드마크·간선·하천 좌표) |
+
+> ODbL은 배포 시 저작자 표시(© OpenStreetMap contributors)와 동일 라이선스 공유 의무(share-alike)가 있다. 원시 데이터는 `tools/geo/fetch-geo-truth.mjs` 로 재현 가능 — `tools/geo/.cache/`(git 미커밋)에 원시 Overpass 응답을 캐시.
+
 ## 런타임 의존성 (주요)
 
 | 패키지 | 라이선스 |

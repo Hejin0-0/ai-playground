@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+<rect width="900" height="900" fill="#0b1220"/>
+<g stroke="#1e2a3d" stroke-width="1">
+<line x1="40.0" y1="860.0" x2="40.0" y2="40.0"/>
+<line x1="40.0" y1="860.0" x2="860.0" y2="860.0"/>
+<line x1="142.5" y1="860.0" x2="142.5" y2="40.0"/>
+<line x1="40.0" y1="757.5" x2="860.0" y2="757.5"/>
+<line x1="245.0" y1="860.0" x2="245.0" y2="40.0"/>
+<line x1="40.0" y1="655.0" x2="860.0" y2="655.0"/>
+<line x1="347.5" y1="860.0" x2="347.5" y2="40.0"/>
+<line x1="40.0" y1="552.5" x2="860.0" y2="552.5"/>
+<line x1="450.0" y1="860.0" x2="450.0" y2="40.0"/>
+<line x1="40.0" y1="450.0" x2="860.0" y2="450.0"/>
+<line x1="552.5" y1="860.0" x2="552.5" y2="40.0"/>
+<line x1="40.0" y1="347.5" x2="860.0" y2="347.5"/>
+<line x1="655.0" y1="860.0" x2="655.0" y2="40.0"/>
+<line x1="40.0" y1="245.0" x2="860.0" y2="245.0"/>
+<line x1="757.5" y1="860.0" x2="757.5" y2="40.0"/>
+<line x1="40.0" y1="142.5" x2="860.0" y2="142.5"/>
+<line x1="860.0" y1="860.0" x2="860.0" y2="40.0"/>
+<line x1="40.0" y1="40.0" x2="860.0" y2="40.0"/>
+</g>
+<g stroke="#3a4a63" stroke-width="1.5">
+<line x1="40.0" y1="450.0" x2="860.0" y2="450.0"/>
+<line x1="450.0" y1="860.0" x2="450.0" y2="40.0"/>
+</g>
+<g stroke="#3f8ef0" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M79.4,-2272.2 L131.4,-1512.3 L676.5,-576.2 L693.7,-4.5 L612.0,659.5 L154.0,1173.0 L14.6,1691.9"><title>鴨川</title></path>
+<path d="M670.4,-155.2 L667.9,68.9 L575.7,277.2 L570.5,444.3 L604.6,471.7 L582.0,507.8 L603.3,646.8 L585.7,689.4"><title>高瀬川</title></path>
+<path d="M510.9,-814.0 L459.0,-775.3 L515.4,-816.9 L329.3,-736.3 L318.2,-716.7 L318.2,17.5 L338.9,384.6 L326.2,399.4 L323.1,1007.6 L250.5,1112.8"><title>堀川</title></path>
+</g>
+<g stroke="#c7cdd6" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85">
+<path d="M320.4,-65.8 L322.3,145.6 L341.6,372.3 L320.4,-65.8"><title>堀川通</title></path>
+<path d="M540.6,733.9 L553.1,485.1 L551.5,302.4 L647.0,70.5 L639.2,-235.7 L653.2,-531.3"><title>河原町通</title></path>
+<path d="M768.8,263.2 L750.7,293.6 L777.4,250.1 L801.0,110.3 L820.4,-466.1 L876.2,-709.3 L832.1,-523.5"><title>東大路通</title></path>
+<path d="M709.3,245.4 L807.1,293.6 L718.8,244.6 L808.1,293.6 L772.7,256.3 L583.0,218.1 L270.0,213.2 L629.8,232.3"><title>五条通</title></path>
+<path d="M469.1,372.1 L651.5,369.8 L739.5,377.0 L651.5,371.3 L135.5,374.1 L-19.7,371.5 L-125.0,377.0 L-276.7,378.0"><title>七条通</title></path>
+<path d="M958.0,361.4 L770.4,261.6 L1116.3,388.9 L1224.5,549.6 L1671.0,555.6 L1799.5,322.1 L2006.2,348.1 L2201.7,260.4"><title>東海道</title></path>
+</g>
+<circle cx="242.7" cy="554.5" r="4" fill="#f2b544" stroke="#00000055"><title>東寺</title></circle>
+<text x="248.7" y="548.5" font-size="10" font-family="sans-serif" fill="#f2e6c9">東寺</text>
+<circle cx="692.7" cy="400.4" r="4" fill="#f2b544" stroke="#00000055"><title>三十三間堂</title></circle>
+<text x="698.7" y="394.4" font-size="10" font-family="sans-serif" fill="#f2e6c9">三十三間堂</text>
+<circle cx="442.4" cy="323.3" r="4" fill="#f2b544" stroke="#00000055"><title>東本願寺</title></circle>
+<text x="448.4" y="317.3" font-size="10" font-family="sans-serif" fill="#f2e6c9">東本願寺</text>
+<circle cx="479.9" cy="432.4" r="4" fill="#f2b544" stroke="#00000055"><title>羅城門</title></circle>
+<text x="485.9" y="426.4" font-size="10" font-family="sans-serif" fill="#f2e6c9">羅城門</text>
+<circle cx="459.8" cy="410.2" r="4" fill="#f2b544" stroke="#00000055"><title>京都タワー</title></circle>
+<text x="465.8" y="404.2" font-size="10" font-family="sans-serif" fill="#f2e6c9">京都タワー</text>
+<circle cx="492.0" cy="419.7" r="4" fill="#f2b544" stroke="#00000055"><title>電気鉄道事業発祥地</title></circle>
+<text x="498.0" y="413.7" font-size="10" font-family="sans-serif" fill="#f2e6c9">電気鉄道事業発祥地</text>
+<circle cx="509.4" cy="428.1" r="4" fill="#f2b544" stroke="#00000055"><title>輪型地蔵</title></circle>
+<text x="515.5" y="422.1" font-size="10" font-family="sans-serif" fill="#f2e6c9">輪型地蔵</text>
+<circle cx="514.2" cy="432.0" r="4" fill="#f2b544" stroke="#00000055"><title>正行院</title></circle>
+<text x="520.2" y="426.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">正行院</text>
+<circle cx="443.0" cy="380.9" r="4" fill="#f2b544" stroke="#00000055"><title>東本願寺所有地</title></circle>
+<text x="449.0" y="374.9" font-size="10" font-family="sans-serif" fill="#f2e6c9">東本願寺所有地</text>
+<circle cx="480.3" cy="386.0" r="4" fill="#f2b544" stroke="#00000055"><title>東三地蔵尊</title></circle>
+<text x="486.3" y="380.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">東三地蔵尊</text>
+<circle cx="382.4" cy="424.0" r="4" fill="#f2b544" stroke="#00000055"><title>新撰組最後の洛中屋敷跡の碑</title></circle>
+<text x="388.4" y="418.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">新撰組最後の洛中屋敷跡の碑</text>
+<circle cx="398.5" cy="394.6" r="4" fill="#f2b544" stroke="#00000055"><title>神道町地蔵尊</title></circle>
+<text x="404.5" y="388.6" font-size="10" font-family="sans-serif" fill="#f2e6c9">神道町地蔵尊</text>
+<circle cx="410.6" cy="381.3" r="4" fill="#f2b544" stroke="#00000055"><title>往来安全</title></circle>
+<text x="416.6" y="375.3" font-size="10" font-family="sans-serif" fill="#f2e6c9">往来安全</text>
+<circle cx="477.3" cy="358.4" r="4" fill="#f2b544" stroke="#00000055"><title>東光寺</title></circle>
+<text x="483.3" y="352.4" font-size="10" font-family="sans-serif" fill="#f2e6c9">東光寺</text>
+<circle cx="526.5" cy="389.9" r="4" fill="#f2b544" stroke="#00000055"><title>願教寺</title></circle>
+<text x="532.5" y="383.9" font-size="10" font-family="sans-serif" fill="#f2e6c9">願教寺</text>
+<circle cx="354.7" cy="428.1" r="4" fill="#f2b544" stroke="#00000055"><title>不動堂明王院</title></circle>
+<text x="360.7" y="422.1" font-size="10" font-family="sans-serif" fill="#f2e6c9">不動堂明王院</text>
+<circle cx="413.9" cy="357.3" r="4" fill="#f2b544" stroke="#00000055"><title>覚林寺</title></circle>
+<text x="419.9" y="351.3" font-size="10" font-family="sans-serif" fill="#f2e6c9">覚林寺</text>
+<circle cx="547.6" cy="475.6" r="4" fill="#f2b544" stroke="#00000055"><title>正久寺</title></circle>
+<text x="553.6" y="469.6" font-size="10" font-family="sans-serif" fill="#f2e6c9">正久寺</text>
+<circle cx="358.2" cy="401.2" r="4" fill="#f2b544" stroke="#00000055"><title>伊東甲子太郎襲撃推定地</title></circle>
+<text x="364.2" y="395.2" font-size="10" font-family="sans-serif" fill="#f2e6c9">伊東甲子太郎襲撃推定地</text>
+<circle cx="462.7" cy="346.5" r="4" fill="#f2b544" stroke="#00000055"><title>阿弥陀堂門</title></circle>
+<text x="468.7" y="340.5" font-size="10" font-family="sans-serif" fill="#f2e6c9">阿弥陀堂門</text>
+<circle cx="352.2" cy="487.9" r="4" fill="#f2b544" stroke="#00000055"><title>平重衡 受戒之地</title></circle>
+<text x="358.2" y="481.9" font-size="10" font-family="sans-serif" fill="#f2e6c9">平重衡 受戒之地</text>
+<circle cx="358.2" cy="397.9" r="4" fill="#f2b544" stroke="#00000055"><title>伊東甲子太郎外数名殉難之跡</title></circle>
+<text x="364.2" y="391.9" font-size="10" font-family="sans-serif" fill="#f2e6c9">伊東甲子太郎外数名殉難之跡</text>
+<circle cx="446.9" cy="343.4" r="4" fill="#f2b544" stroke="#00000055"><title>Stamp Point №2</title></circle>
+<text x="452.9" y="337.4" font-size="10" font-family="sans-serif" fill="#f2e6c9">Stamp Point №2</text>
+<circle cx="450.0" cy="450.0" r="5" fill="none" stroke="#ff5a5a" stroke-width="2"/>
+<text x="458.0" y="466.0" font-size="11" font-family="sans-serif" fill="#ff5a5a">京都駅</text>
+<text x="40" y="24" font-size="16" font-family="sans-serif" fill="#e8edf5">Kyoto Geo-Truth — 코어 ±2km</text>
+<text x="40" y="884" font-size="11" font-family="sans-serif" fill="#e8edf5">landmarks=23 roads=6 rivers=3 · OpenStreetMap via Overpass API (ODbL)</text>
+<circle cx="44" cy="860" r="4" fill="#f2b544"/><text x="54" y="864" font-size="11" font-family="sans-serif" fill="#e8edf5">landmark</text>
+<line x1="130" y1="860" x2="150" y2="860" stroke="#c7cdd6" stroke-width="2"/><text x="156" y="864" font-size="11" font-family="sans-serif" fill="#e8edf5">road</text>
+<line x1="210" y1="860" x2="230" y2="860" stroke="#3f8ef0" stroke-width="2.5"/><text x="236" y="864" font-size="11" font-family="sans-serif" fill="#e8edf5">river</text>
+</svg>
