@@ -202,5 +202,6 @@ reportsTo는 조율 구조일 뿐 결정권 아님(승인·거절·방향은 인
 - 에이전트 pause/resume은 `POST /api/agents/{id}/pause|resume` (회사 스코프 경로 아님 — v722 기준).
 - codex_local은 지원 모델 명시 필수(`gpt-5.6-sol` 등) — 미지정 시 Paperclip이 미지원 모델을 골라 런이 죽음.
 - `authorizationPolicy.trustBoundary.mode=low_trust_review`는 **trustPreset=standard여도** 저신뢰 실행(격리 워크스페이스)을 강제 → setup_failed/blocked. 게이트 끌 땐 boundary도 함께 제거(`authorizationPolicy:{trustPreset:standard}`).
-- codex_local은 지원 모델 명시 필수(`gpt-5.6-sol` 등) — 미지정 시 Paperclip이 미지원 모델을 골라 런이 죽음.
-- `authorizationPolicy.trustBoundary.mode=low_trust_review`는 **trustPreset=standard여도** 저신뢰 실행(격리 워크스페이스)을 강제 → setup_failed/blocked. 게이트 끌 땐 boundary도 함께 제거(`authorizationPolicy:{trustPreset:standard}`).
+- **🚨 API로 이슈 생성 시 `projectWorkspaceId` 필수** (2026-07-27 사고). UI 발주 이슈는 워크스페이스가 붙지만 `POST /api/companies/{cid}/issues`로 만들면 `projectWorkspaceId: null`이 되어 사원이 **빈 마운트**를 받는다. QA 사원이 `.git` 없는 빈 마운트에서 **옛 트리**를 읽고 전 조건 FAIL을 냈다가 무효 처리한 사고가 실제로 발생했다. 개발 이슈의 값을 복사해 넣을 것 (`GET /api/issues/{devIssueId}` → `projectWorkspaceId`).
+- **QA 발주문에 '0단계 대상 검증 게이트'를 넣을 것**. 위 사고에서 QA는 *"this harness mount is empty and has no .git … the target commit identity cannot be independently verified"* 라고 스스로 적고도 판정을 강행했다. 발주문에 `git rev-parse --verify <sha>` 확인 실패 시 **판정 금지·보고 후 정지**를 명시하고, 코멘트 첫 줄에 `git log --oneline -1` 결과를 적게 하면 무효 판정을 조기에 걸러낼 수 있다.
+- **`acpx_session_init_failed`는 증상이지 원인이 아니다** (2026-07-27). "Claude ACP session creation timed out"으로 이슈가 `blocked`이 되지만, 사원 레코드의 `errorReason`을 보면 실제 사유는 `You've hit your session limit · resets <시각>`인 경우가 있다. 어댑터를 직접 stdio로 때려 `session/new`가 정상 응답하면(실측 2.5초) CLI·어댑터는 무고하고 **한도 리셋만 기다리면 된다**. `GET /api/agents/{id}` → `status`/`errorReason` 를 먼저 볼 것. 리셋 후에는 이슈를 `todo`로 되돌리고 재배정하면 즉시 재가동된다(`errorReason` 문자열은 잔여물이라 남아 있어도 무방).
