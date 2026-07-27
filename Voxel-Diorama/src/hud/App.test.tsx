@@ -13,6 +13,7 @@ const task: Task = {
   status: "in_progress",
   priority: "medium",
   completedAt: null,
+  approved: null,
 };
 
 function loadingIsAnnounced() {

@@ -10,15 +10,26 @@ interface BuildingTask {
   status: string;
   priority: TaskPriority | null;
   completedAt: string | null;
+  approved: boolean | null;
 }
 
 export interface BuildingProjection {
   issueId: string;
   attemptNumber: number;
-  priority: TaskPriority | null;
+  priority: TaskPriority;
   kind: BuildingKind;
   plot: { x: number; z: number };
   score: number;
+}
+
+export interface AdjustmentProjection {
+  issueId: string;
+  plot: { x: number; z: number };
+}
+
+export interface IslandProjection {
+  buildings: BuildingProjection[];
+  adjustments: AdjustmentProjection[];
 }
 
 const PRIORITY_SCORES: Record<TaskPriority, number> = {
@@ -28,9 +39,8 @@ const PRIORITY_SCORES: Record<TaskPriority, number> = {
   critical: 60,
 };
 
-export function priorityScore(priority: TaskPriority | null): number {
-  // ponytail: null violates the D10 creation rule; keep it visible but unscored until reconciliation exists.
-  return priority ? PRIORITY_SCORES[priority] : 0;
+export function priorityScore(priority: TaskPriority): number {
+  return PRIORITY_SCORES[priority];
 }
 
 function hash(value: string): number {
@@ -65,39 +75,68 @@ function spiralPlots(count: number): Array<{ x: number; z: number }> {
   return plots.slice(0, count);
 }
 
+function directDoneTasks(
+  tasks: readonly BuildingTask[],
+  rootIssueId: string,
+): BuildingTask[] {
+  const candidates = tasks
+    .filter((task) => task.parentId === rootIssueId && task.status === "done")
+    .sort((a, b) => {
+      const aKey = JSON.stringify([a.id, a.parentId, a.status, a.priority, a.completedAt, a.approved]);
+      const bKey = JSON.stringify([b.id, b.parentId, b.status, b.priority, b.completedAt, b.approved]);
+      return aKey < bKey ? -1 : aKey > bKey ? 1 : 0;
+    });
+  return candidates
+    .filter((task, index) => index === 0 || task.id !== candidates[index - 1].id)
+    .sort((a, b) => {
+      const parsedA = Date.parse(a.completedAt ?? "");
+      const parsedB = Date.parse(b.completedAt ?? "");
+      const aCompleted = Number.isNaN(parsedA) ? Infinity : parsedA;
+      const bCompleted = Number.isNaN(parsedB) ? Infinity : parsedB;
+      if (aCompleted !== bCompleted) return aCompleted < bCompleted ? -1 : 1;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
+}
+
+export function projectIsland(
+  tasks: readonly BuildingTask[],
+  rootIssueId: string,
+): IslandProjection {
+  const done = directDoneTasks(tasks, rootIssueId);
+  const buildable = done.filter(
+    (task): task is BuildingTask & { priority: TaskPriority } =>
+      task.approved === true && task.priority !== null,
+  );
+  const adjustments = done.filter(
+    (task) => task.approved === false || task.priority === null,
+  );
+  const plots = spiralPlots(buildable.length + adjustments.length);
+
+  return {
+    buildings: buildable.map((task, index) => {
+      // ponytail: P3-2 has first completions only; VOX-26 adds persisted rework attempt numbers.
+      const attemptNumber = 1;
+      return {
+        issueId: task.id,
+        attemptNumber,
+        priority: task.priority,
+        kind: buildingKind(task.id, attemptNumber),
+        plot: plots[index],
+        score: priorityScore(task.priority),
+      };
+    }),
+    adjustments: adjustments.map((task, index) => ({
+      issueId: task.id,
+      plot: plots[buildable.length + index],
+    })),
+  };
+}
+
 export function projectBuildings(
   tasks: readonly BuildingTask[],
   rootIssueId: string,
 ): BuildingProjection[] {
-  const candidates = tasks
-    .filter((task) => task.parentId === rootIssueId && task.status === "done")
-    .sort((a, b) => {
-      const aKey = JSON.stringify([a.id, a.parentId, a.status, a.priority, a.completedAt]);
-      const bKey = JSON.stringify([b.id, b.parentId, b.status, b.priority, b.completedAt]);
-      return aKey < bKey ? -1 : aKey > bKey ? 1 : 0;
-    });
-  const done = candidates
-    .filter((task, index) => index === 0 || task.id !== candidates[index - 1].id)
-    .sort((a, b) => {
-      const aCompleted = a.completedAt ?? "";
-      const bCompleted = b.completedAt ?? "";
-      if (aCompleted !== bCompleted) return aCompleted < bCompleted ? -1 : 1;
-      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-    });
-  const plots = spiralPlots(done.length);
-
-  return done.map((task, index) => {
-    // ponytail: P3-2 has first completions only; VOX-26 adds persisted rework attempt numbers.
-    const attemptNumber = 1;
-    return {
-      issueId: task.id,
-      attemptNumber,
-      priority: task.priority,
-      kind: buildingKind(task.id, attemptNumber),
-      plot: plots[index],
-      score: priorityScore(task.priority),
-    };
-  });
+  return projectIsland(tasks, rootIssueId).buildings;
 }
 
 export function totalScore(buildings: readonly BuildingProjection[]): number {

@@ -1,3 +1,5 @@
+import { APPROVAL_STATUSES, type ApprovalStatus } from "./review.ts";
+
 export const TASK_PRIORITIES = ["critical", "high", "medium", "low"] as const;
 export const TASK_STATUSES = [
   "backlog",
@@ -12,7 +14,7 @@ export const TASK_STATUSES = [
 export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
-export interface Task {
+export interface TaskProjection {
   id: string;
   parentId: string | null;
   identifier: string;
@@ -20,7 +22,10 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority | null;
   completedAt: string | null;
+  approved: boolean | null;
 }
+
+export type Task = TaskProjection;
 
 export interface TaskDraft {
   title: string;
@@ -53,7 +58,16 @@ function parseTask(value: unknown): Task {
   ) {
     throw new Error("Paperclip 업무 응답 형식이 올바르지 않습니다.");
   }
-  return task as unknown as Task;
+  return {
+    id: task.id,
+    parentId: task.parentId,
+    identifier: task.identifier,
+    title: task.title,
+    status: task.status as TaskStatus,
+    priority: task.priority as TaskPriority | null,
+    completedAt: task.completedAt,
+    approved: null,
+  };
 }
 
 async function expectJson(response: Response): Promise<unknown> {
@@ -68,7 +82,27 @@ async function expectJson(response: Response): Promise<unknown> {
   return data;
 }
 
-export async function listTasks(fetcher: Fetcher, companyId: string): Promise<Task[]> {
+async function hasApprovedReview(fetcher: Fetcher, issueId: string): Promise<boolean> {
+  const data = await expectJson(await fetcher(`/api/issues/${encodeURIComponent(issueId)}/approvals`));
+  if (!Array.isArray(data)) throw new Error("Paperclip 승인 목록 형식이 올바르지 않습니다.");
+  const statuses = data.map((value) => {
+    if (
+      !value ||
+      typeof value !== "object" ||
+      !APPROVAL_STATUSES.includes((value as { status?: unknown }).status as ApprovalStatus)
+    ) {
+      throw new Error("Paperclip 승인 응답 형식이 올바르지 않습니다.");
+    }
+    return (value as { status: ApprovalStatus }).status;
+  });
+  return statuses.includes("approved");
+}
+
+export async function listTasks(
+  fetcher: Fetcher,
+  companyId: string,
+  approvalRootIssueId?: string,
+): Promise<Task[]> {
   const data = await expectJson(await fetcher(taskPath(companyId)));
   if (!Array.isArray(data)) throw new Error("Paperclip 업무 목록 형식이 올바르지 않습니다.");
   const unique = new Map<string, { task: Task; fingerprint: string }>();
@@ -87,7 +121,13 @@ export async function listTasks(fetcher: Fetcher, companyId: string): Promise<Ta
     }
     unique.set(task.id, { task, fingerprint });
   }
-  return [...unique.values()].map(({ task }) => task);
+  return Promise.all(
+    [...unique.values()].map(async ({ task }) =>
+      approvalRootIssueId && task.parentId === approvalRootIssueId && task.status === "done"
+        ? { ...task, approved: await hasApprovedReview(fetcher, task.id) }
+        : task,
+    ),
+  );
 }
 
 function validateDraft(draft: TaskDraft): TaskFieldErrors {

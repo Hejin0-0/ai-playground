@@ -18,4 +18,7 @@ assert.match(app, /document\.visibilityState === "visible"/, "task polling must 
 assert.match(app, /if \(listLoadRef\.current\) return listLoadRef\.current/, "task loads must share one request");
 assert.match(app, /isDisabled=\{isSubmitting \|\| !activeTrip\}/, "task creation must require an active trip");
 
+assert.match(source, /AdjustmentMarker/, "done tasks needing reconciliation must render a marker");
+assert.match(source, /\[조정 필요\]/, "the reconciliation marker must carry the PLAN label");
+
 console.log("Island.test.ts: all checks passed");

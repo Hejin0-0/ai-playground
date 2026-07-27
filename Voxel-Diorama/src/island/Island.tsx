@@ -1,10 +1,11 @@
-import { OrbitControls } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import type { Task } from "../hud/tasks.ts";
 import type { ActiveTrip } from "../state/useActiveTrip.ts";
 import {
-  projectBuildings,
+  projectIsland,
   totalScore,
+  type AdjustmentProjection,
   type BuildingProjection,
 } from "./buildings.ts";
 
@@ -16,6 +17,7 @@ import {
 const GROUND = "#7d828c";
 const PLOT = "#aeb4bf";
 const BUILDING = "#5f6672";
+const ADJUSTMENT = "#c8872d";
 const PLOT_GAP = 2.4;
 
 function Ground({ plotCount }: { plotCount: number }) {
@@ -83,6 +85,27 @@ function Building({ building }: { building: BuildingProjection }) {
   );
 }
 
+function AdjustmentMarker({ marker }: { marker: AdjustmentProjection }) {
+  return (
+    <group
+      name={`adjustment-${marker.issueId}`}
+      position={[marker.plot.x * PLOT_GAP, 0.4, marker.plot.z * PLOT_GAP]}
+    >
+      <mesh position={[0, 0.6, 0]}>
+        <boxGeometry args={[0.12, 1.2, 0.12]} />
+        <meshStandardMaterial color={ADJUSTMENT} />
+      </mesh>
+      <mesh position={[0, 1.25, 0]}>
+        <boxGeometry args={[1.35, 0.5, 0.12]} />
+        <meshStandardMaterial color={ADJUSTMENT} />
+      </mesh>
+      <Html center position={[0, 1.25, 0.08]}>
+        <span className="adjustment-label">[조정 필요]</span>
+      </Html>
+    </group>
+  );
+}
+
 export function IslandScore({ score, buildingCount }: { score: number; buildingCount: number }) {
   return (
     <div className="island-score" role="status" aria-live="polite">
@@ -100,9 +123,12 @@ export function Island({
   activeTrip: ActiveTrip | null;
   tasks: readonly Task[];
 }) {
-  const buildings = activeTrip ? projectBuildings(tasks, activeTrip.rootIssueId) : [];
-  const radius = buildings.reduce(
-    (largest, building) => Math.max(largest, Math.abs(building.plot.x), Math.abs(building.plot.z)),
+  const projection = activeTrip
+    ? projectIsland(tasks, activeTrip.rootIssueId)
+    : { buildings: [], adjustments: [] };
+  const { buildings, adjustments } = projection;
+  const radius = [...buildings, ...adjustments].reduce(
+    (largest, item) => Math.max(largest, Math.abs(item.plot.x), Math.abs(item.plot.z)),
     2,
   );
   const plotCount = radius * 2 + 1;
@@ -123,6 +149,9 @@ export function Island({
             <Plots plotCount={plotCount} />
             {buildings.map((building) => (
               <Building key={building.issueId} building={building} />
+            ))}
+            {adjustments.map((marker) => (
+              <AdjustmentMarker key={marker.issueId} marker={marker} />
             ))}
           </>
         )}

@@ -15,6 +15,7 @@ const existing: Task = {
   status: "done",
   priority: "high",
   completedAt: "2026-07-27T01:00:00.000Z",
+  approved: null,
 };
 
 async function listUsesTheCompanyProxyAndParsesTasks() {
@@ -26,6 +27,44 @@ async function listUsesTheCompanyProxyAndParsesTasks() {
 
   assert.equal(requested, "/api/companies/company%2Fa/issues");
   assert.deepEqual(tasks, [existing]);
+}
+
+async function listCarriesApprovalEvidenceForDoneTasksUnderTheActiveTrip() {
+  const directApproved = { ...existing, id: "approved" };
+  const directUnapproved = { ...existing, id: "unapproved" };
+  const pending = { ...existing, id: "pending", status: "in_review", completedAt: null };
+  const grandchild = { ...existing, id: "grandchild", parentId: "approved" };
+  const requests: string[] = [];
+
+  const tasks = await listTasks(async (input) => {
+    const path = String(input);
+    requests.push(path);
+    if (path.endsWith("/issues")) {
+      return Response.json([directApproved, directUnapproved, pending, grandchild]);
+    }
+    if (path === "/api/issues/approved/approvals") {
+      return Response.json([{ id: "approval-1", status: "approved" }]);
+    }
+    if (path === "/api/issues/unapproved/approvals") {
+      return Response.json([{ id: "approval-2", status: "rejected" }]);
+    }
+    return Response.json({ message: "unexpected path" }, { status: 404 });
+  }, "company-1", "trip-root");
+
+  assert.deepEqual(
+    tasks.map(({ id, approved }) => ({ id, approved })),
+    [
+      { id: "approved", approved: true },
+      { id: "unapproved", approved: false },
+      { id: "pending", approved: null },
+      { id: "grandchild", approved: null },
+    ],
+  );
+  assert.deepEqual(requests, [
+    "/api/companies/company-1/issues",
+    "/api/issues/approved/approvals",
+    "/api/issues/unapproved/approvals",
+  ]);
 }
 
 async function listRejectsTasksWithoutAParentField() {
@@ -85,6 +124,7 @@ async function validDraftSendsOneRequestAndReturnsTheCreatedTask() {
     status: "backlog",
     priority: "medium",
     completedAt: null,
+    approved: null,
   };
   const submitter = createTaskSubmitter(async (_input, init) => {
     requests += 1;
@@ -180,6 +220,7 @@ function mergeKeepsARepeatedSuccessToOneVisibleTask() {
 }
 
 await listUsesTheCompanyProxyAndParsesTasks();
+await listCarriesApprovalEvidenceForDoneTasksUnderTheActiveTrip();
 await listRejectsTasksWithoutAParentField();
 await listRejectsConflictingDuplicateIds();
 await invalidDraftShowsFieldErrorsWithoutARequest();

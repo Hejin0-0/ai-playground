@@ -142,6 +142,15 @@
     font-size: 1.25rem;
   }
 
+  .adjustment-label {
+    padding: 2px 5px;
+    color: #5f3a08;
+    background: #fff2cd;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
   .create-form,
   .state-panel {
     display: grid;

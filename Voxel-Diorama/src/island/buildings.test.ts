@@ -4,17 +4,26 @@ import {
   BUILDING_KINDS,
   priorityScore,
   projectBuildings,
+  projectIsland,
   totalScore,
 } from "./buildings.ts";
 
 const tasks = [
-  { id: "trip-root", parentId: null, status: "done", priority: "medium", completedAt: null },
+  {
+    id: "trip-root",
+    parentId: null,
+    status: "done",
+    priority: "medium",
+    completedAt: null,
+    approved: null,
+  },
   {
     id: "issue-b",
     parentId: "trip-root",
     status: "done",
     priority: "critical",
     completedAt: "2026-07-27T01:00:00.000Z",
+    approved: true,
   },
   {
     id: "issue-a",
@@ -22,6 +31,7 @@ const tasks = [
     status: "done",
     priority: "medium",
     completedAt: "2026-07-27T02:00:00.000Z",
+    approved: true,
   },
   {
     id: "issue-a",
@@ -29,14 +39,39 @@ const tasks = [
     status: "done",
     priority: "low",
     completedAt: "2026-07-27T02:00:00.000Z",
+    approved: true,
   },
-  { id: "pending", parentId: "trip-root", status: "in_review", priority: "high", completedAt: null },
+  {
+    id: "direct-done",
+    parentId: "trip-root",
+    status: "done",
+    priority: "high",
+    completedAt: "2026-07-27T03:00:00.000Z",
+    approved: false,
+  },
+  {
+    id: "no-priority",
+    parentId: "trip-root",
+    status: "done",
+    priority: null,
+    completedAt: "2026-07-27T04:00:00.000Z",
+    approved: true,
+  },
+  {
+    id: "pending",
+    parentId: "trip-root",
+    status: "in_review",
+    priority: "high",
+    completedAt: null,
+    approved: null,
+  },
   {
     id: "grandchild",
     parentId: "issue-a",
     status: "done",
     priority: "high",
     completedAt: "2026-07-27T03:00:00.000Z",
+    approved: true,
   },
   {
     id: "other-trip",
@@ -44,10 +79,12 @@ const tasks = [
     status: "done",
     priority: "high",
     completedAt: "2026-07-27T04:00:00.000Z",
+    approved: true,
   },
 ] as const;
 
-const buildings = projectBuildings(tasks, "trip-root");
+const projection = projectIsland(tasks, "trip-root");
+const buildings = projection.buildings;
 
 assert.deepEqual(
   buildings.map(({ issueId }) => issueId),
@@ -68,7 +105,12 @@ assert.deepEqual(
   [15, 30, 45, 60],
   "D10 priority scores must stay fixed",
 );
-assert.equal(priorityScore(null), 0, "a task that violates D10 remains visible without earning points");
+assert.deepEqual(
+  projection.adjustments.map(({ issueId }) => issueId),
+  ["direct-done", "no-priority"],
+  "unreviewed or unprioritized done tasks become adjustment markers, not buildings",
+);
+assert.equal(totalScore(buildings), 75, "adjustment markers must not contribute points");
 
 assert.deepEqual(
   projectBuildings([...tasks].reverse(), "trip-root"),
@@ -79,6 +121,83 @@ assert.deepEqual(
   projectBuildings(tasks.filter(({ id }) => id !== "issue-a"), "trip-root")[0]?.plot,
   buildings[0]?.plot,
   "a later completion must not move an existing building",
+);
+
+const offsetOrder = projectBuildings(
+  [
+    {
+      id: "earlier-with-offset",
+      parentId: "trip-root",
+      status: "done",
+      priority: "medium",
+      completedAt: "2026-07-27T10:00:00+09:00",
+      approved: true,
+    },
+    {
+      id: "later-in-utc",
+      parentId: "trip-root",
+      status: "done",
+      priority: "medium",
+      completedAt: "2026-07-27T02:00:00Z",
+      approved: true,
+    },
+  ],
+  "trip-root",
+);
+assert.deepEqual(
+  offsetOrder.map(({ issueId, plot }) => ({ issueId, plot })),
+  [
+    { issueId: "earlier-with-offset", plot: { x: 0, z: 0 } },
+    { issueId: "later-in-utc", plot: { x: 1, z: 0 } },
+  ],
+  "completedAt offsets must be normalized before assigning the central plot",
+);
+
+const invalidTimeOrder = projectBuildings(
+  [
+    {
+      id: "invalid-b",
+      parentId: "trip-root",
+      status: "done",
+      priority: "medium",
+      completedAt: "invalid",
+      approved: true,
+    },
+    {
+      id: "invalid-a",
+      parentId: "trip-root",
+      status: "done",
+      priority: "medium",
+      completedAt: "also-invalid",
+      approved: true,
+    },
+  ],
+  "trip-root",
+);
+assert.deepEqual(
+  invalidTimeOrder,
+  projectBuildings(
+    [
+      {
+        id: "invalid-a",
+        parentId: "trip-root",
+        status: "done",
+        priority: "medium",
+        completedAt: "also-invalid",
+        approved: true,
+      },
+      {
+        id: "invalid-b",
+        parentId: "trip-root",
+        status: "done",
+        priority: "medium",
+        completedAt: "invalid",
+        approved: true,
+      },
+    ],
+    "trip-root",
+  ),
+  "invalid completion times must still have response-order-independent placement",
 );
 
 const moduleUrl = new URL("./buildings.ts", import.meta.url).href;

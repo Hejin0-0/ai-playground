@@ -166,6 +166,7 @@ export function App({ companyId }: { companyId: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const activeTrip = useActiveTrip();
+  const rootIssueId = activeTrip?.rootIssueId;
   const submitter = useMemo(() => createTaskSubmitter(fetch, companyId), [companyId]);
   const listCommitGate = useMemo(createTaskListCommitGate, []);
   const listLoadRef = useRef<Promise<void> | null>(null);
@@ -182,7 +183,7 @@ export function App({ companyId }: { companyId: string }) {
         return;
       }
       try {
-        const tasks = await listTasks(fetch, companyId);
+        const tasks = await listTasks(fetch, companyId, rootIssueId);
         if (shouldCommit()) {
           setSelectedTaskId((current) => (tasks.some((task) => task.id === current) ? current : null));
           setListState({ kind: "ready", tasks });
@@ -198,7 +199,7 @@ export function App({ companyId }: { companyId: string }) {
       if (listLoadRef.current === request) listLoadRef.current = null;
     });
     return request;
-  }, [companyId, listCommitGate]);
+  }, [companyId, listCommitGate, rootIssueId]);
 
   useEffect(() => {
     void load();
