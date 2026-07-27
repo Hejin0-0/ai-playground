@@ -11,7 +11,7 @@ interface TripsApiOptions {
   target: string;
   companyId: string;
   projectId?: string;
-  store: Pick<WorldStateStore, "load" | "save">;
+  store: Pick<WorldStateStore, "load" | "read" | "save">;
   timeoutMs?: number;
 }
 
@@ -143,7 +143,7 @@ export function tripsApi({
         if (req.url?.split("?")[0] !== ROUTE) return next();
 
         if (req.method === "GET") {
-          const state = (await store.load().catch(() => undefined)) ?? initialState();
+          const state = (await store.read().catch(() => undefined)) ?? initialState();
           const response = json(200, { activeTrip: state.activeTrip ?? null });
           response.headers["cache-control"] = "no-store";
           return write(res, response);

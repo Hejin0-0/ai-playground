@@ -104,6 +104,15 @@ export class WorldStateStore {
     return backup;
   }
 
+  /** Reads the current state with backup fallback, without changing either file. */
+  async read(): Promise<WorldStateLike | undefined> {
+    const main = await this.tryReadValid(this.filePath);
+    if (main !== undefined) return main;
+
+    const backupRaw = await this.readRawIfExists(this.bakPath);
+    return backupRaw === undefined ? undefined : this.parseValid(backupRaw);
+  }
+
   private async writeAndRename(tmpPath: string, destPath: string, data: string): Promise<void> {
     try {
       await this.fs.writeFile(tmpPath, data);

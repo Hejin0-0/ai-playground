@@ -236,8 +236,40 @@ async function getReturnsActiveTripForPolling() {
   });
 }
 
+async function getReadsBackupWithoutHealingCorruptMain() {
+  await withTempDir(async (dir) => {
+    const paperclip = await startPaperclip();
+    const file = path.join(dir, "world-state.json");
+    const corruptMain = "{corrupt";
+    const backup = JSON.stringify({
+      schemaVersion: 1,
+      activeTrip: {
+        id: "trip-from-backup",
+        rootIssueId: "trip-from-backup",
+        themeId: "base",
+        startedAt: "2026-07-27T00:00:00.000Z",
+        active: true,
+      },
+    });
+    await fs.writeFile(file, corruptMain, "utf8");
+    await fs.writeFile(`${file}.bak`, backup, "utf8");
+    const api = await startApi(paperclip.url, new WorldStateStore(file));
+
+    try {
+      const reply = await get(`${api.base}/api/trips`);
+      assert.equal(reply.status, 200);
+      assert.equal(JSON.parse(reply.body).activeTrip.id, "trip-from-backup");
+      assert.equal(await fs.readFile(file, "utf8"), corruptMain, "GET must not heal or otherwise write world-state");
+    } finally {
+      await api.server.close();
+      await paperclip.close();
+    }
+  });
+}
+
 await validRequestCreatesOneRootAndPersistsOneTrip();
 await fourXxResponsesLeaveWorldStateByteIdentical();
 await concurrentStartsStillCreateOnlyOneActiveTrip();
 await getReturnsActiveTripForPolling();
+await getReadsBackupWithoutHealingCorruptMain();
 console.log("tripsApi.test.ts: all checks passed");
