@@ -121,6 +121,7 @@ export async function listTasks(
     }
     unique.set(task.id, { task, fingerprint });
   }
+  // ponytail: one GET per completed active-trip task; batch when Paperclip exposes bulk issue approvals.
   return Promise.all(
     [...unique.values()].map(async ({ task }) =>
       approvalRootIssueId && task.parentId === approvalRootIssueId && task.status === "done"
