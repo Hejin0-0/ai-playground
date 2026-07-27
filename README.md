@@ -1,10 +1,9 @@
 # ai-playground
 
-학습 및 포트폴리오용 프로젝트 모음
+Learning & portfolio projects.
 
-## 프로젝트 목록
+## Projects
 
-| 프로젝트 | 설명 | 기술 스택 |
+| Project | Description | Stack |
 |---|---|---|
-| [Voxel-Diorama](./Voxel-Diorama) | 설명 추가 예정 | Three.js |
-
+| [Voxel-Diorama](./Voxel-Diorama) | A local macOS tool + game where an AI workforce builds the tool itself; each approved success or failed review becomes a permanent 3D voxel building or rubble pile on a themed island. | Vite · React 19 · React-Three-Fiber · Three.js |

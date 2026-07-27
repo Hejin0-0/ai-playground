@@ -26,6 +26,17 @@
 | **kami** | tw93/Kami — 문서 산출 (assets 등 대형 파일 제외, 스킬 본체만) | MIT |
 | **security-audit** | 6단계 병렬 보안 감사 | MIT |
 
+## 토큰 효율 (전 직무 공통, 신규 2026-07-27)
+
+토큰 소모가 운영 최대 병목이라(ORG v4 계기), `/Documents/git-clone/3. 에이전트 프레임워크 & 오케스트레이션`에서 선별. **전 직무 공통 적용** — 어느 사원이든 큰 출력·로그·컨텍스트를 다룰 때.
+
+| skill | 무엇 | 상태 |
+|---|---|---|
+| **token-efficiency/headroom** | 에이전트가 읽는 모든 것(툴 출력·로그·RAG·파일·대화이력)을 LLM 도달 전 압축 (60–95%↓, 가역). `headroom wrap claude\|codex`로 워커 감싸기·proxy·MCP·`headroom learn`(→AGENTS.md) | **미설치** — 도입 플레이북(스킬). 설치·측정 후 D4 검증 경로 밖부터 적용 |
+| **token-efficiency/rtk** | Rust CLI 프록시 — 셸 명령 출력을 LLM 도달 전 필터·압축 (60–90%↓). **글로벌 설치됨**. per-agent 훅(claude/codex) 연동 | 사용 중. **주의: 상주 데몬(paperclipai run 등) 감싸면 기동 멈춤 → 래퍼 스크립트로 우회** |
+
+> 출처(둘 다): headroom `chopratejas/headroom` (Apache-2.0) · rtk `Rust Token Killer`. 상세·경고는 각 SKILL.md.
+
 ## 창고 잔여 자원 (미복사 — 필요 시 선별)
 
 `/Documents/git-clone` 로컬 창고에만 있음. **에이전트는 관리형 클론에서 작업하므로 이 경로에 접근하지 못한다** — 쓰려면 이 폴더로 선별 복사 후 등록할 것.
