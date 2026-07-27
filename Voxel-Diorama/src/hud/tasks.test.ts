@@ -43,10 +43,10 @@ async function listCarriesApprovalEvidenceForDoneTasksUnderTheActiveTrip() {
       return Response.json([directApproved, directUnapproved, pending, grandchild]);
     }
     if (path === "/api/issues/approved/approvals") {
-      return Response.json([{ id: "approval-1", status: "approved" }]);
+      return Response.json([{ id: "approval-1", status: "approved", createdAt: "2026-07-27T01:00:00.000Z" }]);
     }
     if (path === "/api/issues/unapproved/approvals") {
-      return Response.json([{ id: "approval-2", status: "rejected" }]);
+      return Response.json([{ id: "approval-2", status: "rejected", createdAt: "2026-07-27T01:00:00.000Z" }]);
     }
     return Response.json({ message: "unexpected path" }, { status: 404 });
   }, "company-1", "trip-root");
@@ -65,6 +65,53 @@ async function listCarriesApprovalEvidenceForDoneTasksUnderTheActiveTrip() {
     "/api/issues/approved/approvals",
     "/api/issues/unapproved/approvals",
   ]);
+}
+
+async function onlyTheLatestApprovalDecisionKeepsABuilding() {
+  // R1 regression: a stale "approved" record must not revive a building that a
+  // later cancellation withdrew; and a later approval must override an earlier reject.
+  // Response order is shuffled to prove the decision is chosen by createdAt, not array order.
+  const withdrawn = { ...existing, id: "withdrawn" };
+  const reApproved = { ...existing, id: "re-approved" };
+
+  const tasks = await listTasks(async (input) => {
+    const path = String(input);
+    if (path.endsWith("/issues")) return Response.json([withdrawn, reApproved]);
+    if (path === "/api/issues/withdrawn/approvals") {
+      return Response.json([
+        { id: "w-new", status: "cancelled", createdAt: "2026-07-27T02:00:00.000Z" },
+        { id: "w-old", status: "approved", createdAt: "2026-07-27T01:00:00.000Z" },
+      ]);
+    }
+    if (path === "/api/issues/re-approved/approvals") {
+      return Response.json([
+        { id: "r-old", status: "rejected", createdAt: "2026-07-27T01:00:00.000Z" },
+        { id: "r-new", status: "approved", createdAt: "2026-07-27T02:00:00.000Z" },
+      ]);
+    }
+    return Response.json({ message: "unexpected path" }, { status: 404 });
+  }, "company-1", "trip-root");
+
+  assert.deepEqual(
+    tasks.map(({ id, approved }) => ({ id, approved })),
+    [
+      { id: "withdrawn", approved: false },
+      { id: "re-approved", approved: true },
+    ],
+    "only the most recent approval decision may keep a building",
+  );
+}
+
+async function approvalListRejectsRecordsMissingACreatedAt() {
+  await assert.rejects(
+    () =>
+      listTasks(async (input) => {
+        const path = String(input);
+        if (path.endsWith("/issues")) return Response.json([{ ...existing, id: "issue-x" }]);
+        return Response.json([{ id: "a", status: "approved" }]);
+      }, "company-1", "trip-root"),
+    /승인 응답 형식/,
+  );
 }
 
 async function listRejectsTasksWithoutAParentField() {
@@ -221,6 +268,8 @@ function mergeKeepsARepeatedSuccessToOneVisibleTask() {
 
 await listUsesTheCompanyProxyAndParsesTasks();
 await listCarriesApprovalEvidenceForDoneTasksUnderTheActiveTrip();
+await onlyTheLatestApprovalDecisionKeepsABuilding();
+await approvalListRejectsRecordsMissingACreatedAt();
 await listRejectsTasksWithoutAParentField();
 await listRejectsConflictingDuplicateIds();
 await invalidDraftShowsFieldErrorsWithoutARequest();

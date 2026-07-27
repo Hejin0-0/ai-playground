@@ -85,17 +85,27 @@ async function expectJson(response: Response): Promise<unknown> {
 async function hasApprovedReview(fetcher: Fetcher, issueId: string): Promise<boolean> {
   const data = await expectJson(await fetcher(`/api/issues/${encodeURIComponent(issueId)}/approvals`));
   if (!Array.isArray(data)) throw new Error("Paperclip 승인 목록 형식이 올바르지 않습니다.");
-  const statuses = data.map((value) => {
+  // Only the most recent decision counts: a withdrawn/cancelled approval must not
+  // leave a stale earlier "approved" record standing (D4 is a human-only gate).
+  let latest: { status: ApprovalStatus; at: number; id: string } | undefined;
+  for (const value of data) {
     if (
       !value ||
       typeof value !== "object" ||
-      !APPROVAL_STATUSES.includes((value as { status?: unknown }).status as ApprovalStatus)
+      !APPROVAL_STATUSES.includes((value as { status?: unknown }).status as ApprovalStatus) ||
+      typeof (value as { createdAt?: unknown }).createdAt !== "string"
     ) {
       throw new Error("Paperclip 승인 응답 형식이 올바르지 않습니다.");
     }
-    return (value as { status: ApprovalStatus }).status;
-  });
-  return statuses.includes("approved");
+    const approval = value as { status: ApprovalStatus; createdAt: string; id?: unknown };
+    const parsed = Date.parse(approval.createdAt);
+    const at = Number.isNaN(parsed) ? -Infinity : parsed;
+    const id = typeof approval.id === "string" ? approval.id : "";
+    if (!latest || at > latest.at || (at === latest.at && id > latest.id)) {
+      latest = { status: approval.status, at, id };
+    }
+  }
+  return latest?.status === "approved";
 }
 
 export async function listTasks(

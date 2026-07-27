@@ -63,7 +63,13 @@ const PRIORITY_VARIANTS: Record<TaskPriority, BadgeVariant> = {
 export type TaskListState =
   | { kind: "loading" }
   | { kind: "error"; message: string }
-  | { kind: "ready"; tasks: Task[] };
+  | { kind: "ready"; tasks: Task[]; stale?: boolean };
+
+// A failed background poll must surface, never freeze silently: flag the last good
+// list as stale so the operator sees the projection stopped updating.
+export function markListStale(state: TaskListState): TaskListState {
+  return state.kind === "ready" && !state.stale ? { ...state, stale: true } : state;
+}
 
 export function TaskList({
   state,
@@ -101,18 +107,29 @@ export function TaskList({
     );
   }
 
+  const staleBanner = state.stale ? (
+    <div className="form-message error" role="alert">
+      실시간 갱신이 중단되었습니다 — 표시된 섬·목록은 마지막으로 성공한 조회 시점이며 최신이 아닐 수 있습니다.
+    </div>
+  ) : null;
+
   if (state.tasks.length === 0) {
     return (
-      <Card>
-        <div className="state-panel" role="status">
-          <strong>등록된 업무가 없습니다.</strong>
-          <p>오른쪽 발주 양식에서 첫 업무를 만드세요.</p>
-        </div>
-      </Card>
+      <>
+        {staleBanner}
+        <Card>
+          <div className="state-panel" role="status">
+            <strong>등록된 업무가 없습니다.</strong>
+            <p>오른쪽 발주 양식에서 첫 업무를 만드세요.</p>
+          </div>
+        </Card>
+      </>
     );
   }
 
   return (
+    <>
+    {staleBanner}
     <Card padding={0}>
       <div className="task-table-wrap">
         <table className="task-table">
@@ -154,6 +171,7 @@ export function TaskList({
         </table>
       </div>
     </Card>
+    </>
   );
 }
 
@@ -189,7 +207,11 @@ export function App({ companyId }: { companyId: string }) {
           setListState({ kind: "ready", tasks });
         }
       } catch (error) {
-        if (shouldCommit() && !background) {
+        if (!shouldCommit()) return;
+        if (background) {
+          // Do not swallow poll failures: flag the last good projection as stale.
+          setListState(markListStale);
+        } else {
           setListState({ kind: "error", message: error instanceof Error ? error.message : "알 수 없는 오류" });
         }
       }

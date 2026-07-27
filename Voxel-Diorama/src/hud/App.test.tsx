@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { IslandScore } from "../island/Island.tsx";
-import { TaskList } from "./App.tsx";
+import { markListStale, TaskList } from "./App.tsx";
 import type { Task } from "./tasks.ts";
 
 const task: Task = {
@@ -58,6 +58,33 @@ function rowSelectionExposesTheDetailEntryPoint() {
   assert.match(html, /<button[^>]*>Phase 2-3 Astryx 업무 목록·생성 화면<\/button>/);
 }
 
+function backgroundFailureMarksTheLastGoodListStale() {
+  // R2 regression: a failed background poll must not be silent — the last good
+  // list is flagged stale so the UI can warn the operator, never silently frozen.
+  assert.deepEqual(markListStale({ kind: "ready", tasks: [task] }), {
+    kind: "ready",
+    tasks: [task],
+    stale: true,
+  });
+  assert.deepEqual(markListStale({ kind: "loading" }), { kind: "loading" });
+  assert.deepEqual(markListStale({ kind: "error", message: "x" }), { kind: "error", message: "x" });
+}
+
+function staleListWarnsThatLiveUpdatesStopped() {
+  const html = renderToStaticMarkup(
+    <TaskList state={{ kind: "ready", tasks: [task], stale: true }} onRetry={() => {}} />,
+  );
+  assert.match(html, /role="alert"/);
+  assert.match(html, /실시간 갱신/);
+}
+
+function freshListHasNoStaleWarning() {
+  const html = renderToStaticMarkup(
+    <TaskList state={{ kind: "ready", tasks: [task] }} onRetry={() => {}} />,
+  );
+  assert.doesNotMatch(html, /실시간 갱신/);
+}
+
 function islandScoreShowsTheD10Sum() {
   const html = renderToStaticMarkup(<IslandScore score={75} buildingCount={2} />);
   assert.match(html, /섬 점수/);
@@ -70,5 +97,8 @@ emptyIsExplicit();
 errorOffersRetry();
 rowsShowTheRequiredFields();
 rowSelectionExposesTheDetailEntryPoint();
+backgroundFailureMarksTheLastGoodListStale();
+staleListWarnsThatLiveUpdatesStopped();
+freshListHasNoStaleWarning();
 islandScoreShowsTheD10Sum();
 console.log("App.test.tsx: all checks passed");
