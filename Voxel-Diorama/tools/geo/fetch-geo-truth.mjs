@@ -265,53 +265,58 @@ function pathLength(pts) {
 
 // ---- 매칭 -------------------------------------------------------------
 
-// 작은 표지석/비석/경계석은 진짜 시설이 있어도 같은 이름으로 딸려 나온다 —
-// place_of_worship/attraction/문화재(heritage·castle 등)를 표지석보다 우선한다.
-const MARKER_HISTORIC = new Set(['memorial', 'boundary_stone', 'wayside_shrine', 'plaque']);
+// 표지석·비석·경계석·기념물류는 진짜 시설(神社/寺 본전)이 있어도 같은 이름으로
+// 딸려 나온다. CEO 검수(R1): 화강암 표지석 node/11174591021 이 伏見稲荷大社
+// 본전에서 900m 떨어진 채 채택돼 회귀가 났다. 후순위가 아니라 **전 단계 제외**한다.
+// (historic ∈ 아래 집합) 또는 (memorial=* 존재) 인 요소는 랜드마크 후보에서 배제.
+const EXCLUDED_HISTORIC = new Set([
+  'memorial',
+  'boundary_stone',
+  'wayside_shrine',
+  'plaque',
+  'monument',
+]);
+function isExcludedMarker(el) {
+  const t = el.tags ?? {};
+  return (!!t.historic && EXCLUDED_HISTORIC.has(t.historic)) || t.memorial != null;
+}
+
+// 남은(제외되지 않은) 후보 사이의 우선순위: 참배지/명소 > 그 외 사적.
 function typeScore(el) {
   const t = el.tags ?? {};
   if (t.amenity === 'place_of_worship') return 0;
   if (t.tourism === 'attraction') return 0;
-  if (t.historic && !MARKER_HISTORIC.has(t.historic)) return 1;
-  return 2; // 표지석류 — 최후 순위
+  if (t.historic) return 1;
+  return 1;
 }
 
-// 우선순위 단계 — 앞 단계에서 결과가 나오면 뒤 단계는 보지 않는다.
-// 대형 사찰·신사는 OSM에서 경내를 대표하는 "복합체명" 노드 없이 건물 단위
-// (楼門/本殿 등)로만 개별 태깅된 경우가 흔하다 — 그래서 이름 매칭이 실패해도
-// 표지석/비석(typeScore 2)류로 확정하기 전에 근접 참배지 폴백을 먼저 시도한다.
-//
-// 단, "정확한 이름"은 typeScore와 무관하게 "근접하지만 이름이 다른" 후보보다
-// 항상 우선한다 — 그렇지 않으면 복합체 전체를 가리키는 실제 명칭 엔티티가
-// (예: 伏見稲荷大社 way, tourism=yes/heritage 태그라 typeScore 2) 그 옆의
-// 개별 건물(楼門 등, typeScore 0)에 밀려 오매칭된다. 그래서 "정확 이름(표지석
-// 포함)" 단계를 근접 폴백보다 앞에 둔다.
+// 우선순위 단계 — 앞 단계에서 결과가 나오면 뒤 단계는 보지 않는다. 후보 풀은
+// matchLandmark 에서 이미 표지석/비석/기념물류(isExcludedMarker)를 전부 걸러낸 뒤
+// 들어온다. 대형 사찰·신사는 OSM에서 경내 복합체명 노드 없이 건물 단위(楼門/本殿 등)로만
+// 개별 태깅된 경우가 흔하므로, 이름 매칭이 실패하면 근접 참배지/명소로 폴백한다.
 function landmarkCandidateStages(elements, target, inBbox) {
   const NEAR_RADIUS_KM = 0.25;
   const hasName = (el) => !!el.tags?.name;
   return [
-    () => elements.filter((el) => hasName(el) && el.tags.name === target.name && typeScore(el) < 2 && inBbox(elementCenterLatLon(el))),
+    () => elements.filter((el) => hasName(el) && el.tags.name === target.name && inBbox(elementCenterLatLon(el))),
     () =>
       elements.filter(
         (el) =>
           hasName(el) &&
           (el.tags.name.includes(target.name) || target.name.includes(el.tags.name)) &&
-          typeScore(el) < 2 &&
           inBbox(elementCenterLatLon(el))
       ),
-    // 정확한 이름이면 표지석급 타입 태그라도 채택 — 실제 명칭 엔티티 우선.
-    () => elements.filter((el) => hasName(el) && el.tags.name === target.name && inBbox(elementCenterLatLon(el))),
     // 최후 수단: 이름 매칭이 전혀 없을 때만 근접 참배지/명소로 폴백.
     () =>
       elements.filter((el) => {
-        if (typeScore(el) >= 2 || !hasName(el)) return false;
+        if (!hasName(el)) return false;
         const ll = elementCenterLatLon(el);
         return ll && distKm(ll, target.near) <= NEAR_RADIUS_KM;
       }),
   ];
 }
 
-const STAGE_LABELS = ['정확 이름', '부분 이름', '정확 이름(표지석 포함)', `근접(≤250m) 참배지/명소`];
+const STAGE_LABELS = ['정확 이름', '부분 이름', `근접(≤250m) 참배지/명소`];
 
 function matchLandmark(elements, target, warnings) {
   const dlat = 1.5 / KM_LAT;
@@ -319,7 +324,10 @@ function matchLandmark(elements, target, warnings) {
   const [nlat, nlon] = target.near;
   const inBbox = (ll) => ll && Math.abs(ll[0] - nlat) <= dlat && Math.abs(ll[1] - nlon) <= dlon;
 
-  const stages = landmarkCandidateStages(elements, target, inBbox);
+  // R1 수정: 표지석·비석·기념물류(historic∈EXCLUDED_HISTORIC 또는 memorial=*)는
+  // 모든 단계에서 후보 자격을 박탈한다 — 후순위가 아니라 제외.
+  const pool = elements.filter((el) => !isExcludedMarker(el));
+  const stages = landmarkCandidateStages(pool, target, inBbox);
   let candidates = [];
   let stageUsed = -1;
   for (let i = 0; i < stages.length; i++) {
@@ -366,10 +374,10 @@ function extraLandmarks(elements, excludeNames, warnings, max) {
   for (const el of elements) {
     const nm = el.tags?.name;
     if (!nm || seen.has(nm) || byName.has(nm)) continue;
-    // 표지석/비석/경계석급(typeScore 2)은 디오라마 랜드마크로 부적합 — 제외.
+    // 표지석/비석/경계석/기념물류(isExcludedMarker)는 디오라마 랜드마크로 부적합 — 제외.
     // (수정 전에는 이 필터가 없어 "Stamp Point №2", "往来安全" 같은 표지판까지
     // extra 랜드마크로 딸려 들어왔다.)
-    if (typeScore(el) >= 2) continue;
+    if (isExcludedMarker(el)) continue;
     if (JUNK_NAME_PATTERN.test(nm)) continue;
     const ll = elementCenterLatLon(el);
     if (!ll) continue;
