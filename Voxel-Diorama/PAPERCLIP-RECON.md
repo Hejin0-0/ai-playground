@@ -176,6 +176,29 @@ reportsTo는 조율 구조일 뿐 결정권 아님(승인·거절·방향은 인
 
 **실증**: Claude 한도로 막힌 VOX-12 재작업을 대기 없이 Codex Sol(CodexDev)에 배정해 즉시 진행.
 
+## 🧭 ORG v4 — Meta-Loop 재편: Opus=자문(핫패스 밖) (2026-07-27)
+
+**계기**: Phase 3(3D)에서 Opus(ThreeJSDev)가 또 세션 한도 소진 → 반복되는 "Opus 먹통 → 대체자" 사이클. 외부 참조 3안(Agent Dev Kit 디렉토리 / Meta-Loop 모델 배치 / Graph-of-Loops 협업)을 우리 토폴로지에 맞춰 채택. Gemini 워커는 유료 API 미사용 → Sonnet 5 / Haiku 4.5로 대체.
+
+**모델 → 역할 (v4)**:
+
+| 역할 | 모델 | Paperclip 에이전트 | 비고 |
+|---|---|---|---|
+| **Board Advisor** (온디맨드 크리틱, 핫패스 밖) | Opus 4.8 | ThreeJSDev = **paused** | 자문 기능은 **CLI 크로스-리뷰가 수행**(VOX-14/15 전례). 구현 배정 안 함 → Opus 소진 사이클 종료 |
+| **Chief Operator / Senior** (핫패스) | GPT-5.6 | CodexDev(sol) 주력 구현 · Technical Director(terra) 기획 · CodexQA(terra) QA | Codex-first 유지 |
+| **Workers** (병렬 값싼 실행) | **Sonnet 5 / Haiku 4.5** | Developer→`claude-sonnet-5`(표준 구현) · Summarizer(haiku) 단순 | staged: 필요 시 활성화 |
+| Doc Writers | sonnet-4-6 / luna | DocWriter-Claude · DocWriter-Codex | paused |
+
+**모델 라우터** (복잡도+비용): 단순/반복 → Haiku 4.5 · 표준 구현 → Sonnet 5 · 시니어/복잡+QA → Codex(sol/terra) · 크리틱/전략/리스크/taste → **Opus 자문(CLI 온디맨드)**. 크로스-프로바이더 QA 유지.
+
+**중요 — 오케스트레이션은 CLI+CEO** (이미지의 "Orchestrator=GPT-5.6"과 다른 지점): 분해·배정·검증·종합은 CLI(나)+CEO(인간)가 수행. Paperclip 에이전트를 오케스트레이터로 두려면 `canAssignTasks:false`(Lean B)를 풀어야 하고 그럼 에이전트 자가 태스크 생성 위험이 부활 → **거버넌스상 CLI+CEO 오케스트레이션 유지**.
+
+**Graph-of-Loops 개념 매핑** (이미지 3, 마케팅 도메인이라 문자적 루프는 무관): Company Brain=PLAN.md+PAPERCLIP-RECON.md+CLAUDE.md · Anchor(에이전트가 위조 못 하는 실측)=main 무결성+실제 test/build/WebGL 씬그래프+실 Paperclip 상태 · Frozen rules=거버넌스(main 보호·in_review·자가승인 금지·정확 pin) · Human taste gate=D4 · Audit loop=v0.1 YAGNI.
+
 **gotcha (운영)**:
+- **서버 기동은 RTK 우회 필수**: `npx paperclipai run`을 RTK 훅이 `rtk npx …`로 감싸면 상주 서버 출력을 버퍼링하며 기동 방해. 런처 스크립트(`bash <script>`)로 감싸 내부 npx가 훅에 안 걸리게 실행. 기동 후 `/api/health`로 확인.
+- 에이전트 pause/resume은 `POST /api/agents/{id}/pause|resume` (회사 스코프 경로 아님 — v722 기준).
+- codex_local은 지원 모델 명시 필수(`gpt-5.6-sol` 등) — 미지정 시 Paperclip이 미지원 모델을 골라 런이 죽음.
+- `authorizationPolicy.trustBoundary.mode=low_trust_review`는 **trustPreset=standard여도** 저신뢰 실행(격리 워크스페이스)을 강제 → setup_failed/blocked. 게이트 끌 땐 boundary도 함께 제거(`authorizationPolicy:{trustPreset:standard}`).
 - codex_local은 지원 모델 명시 필수(`gpt-5.6-sol` 등) — 미지정 시 Paperclip이 미지원 모델을 골라 런이 죽음.
 - `authorizationPolicy.trustBoundary.mode=low_trust_review`는 **trustPreset=standard여도** 저신뢰 실행(격리 워크스페이스)을 강제 → setup_failed/blocked. 게이트 끌 땐 boundary도 함께 제거(`authorizationPolicy:{trustPreset:standard}`).

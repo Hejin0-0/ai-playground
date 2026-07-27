@@ -52,6 +52,7 @@ D3 기존: "행성 로비 → 국가 테마 → 여행별 새 섬"까지만. 문
 D9 기존: "수정 요청(코멘트) ≠ 반려"에 사용 기준·경계 없음. 문제: 손실 회피 심리상 폐허를 피하려 수정 요청만 쓰게 되어 '반려=영구 폐허' 긴장감이 실전에서 발동하지 않음 → 완료 조건 미충족 = 강제 반려 경계 추가.
 D10 이력: 리뷰(미검증 판정)가 "실제 스케일은 Urgent/High/Medium/Low + No priority"라 주장해 한때 Urgent로 바꿨으나, **Phase 1 실사(2026.720.0)에서 실제 enum은 `critical/high/medium/low`로 확인 → Critical 복원**. priority가 null 가능한 점만 실사와 일치하므로 "발주 시 선택 필수(No priority 금지)"는 우리 앱 강제 규칙으로 유지. (교훈: 실사 전 문서 인용 기반 지적은 실측으로 뒤집힐 수 있음.)
 D12 기존: "초기 2명(TD+Developer), VoxelArtist는 Phase 5". 변경(2026-07-21 사용자 지시): 단일 모델(Claude) 판단에만 회사 방향을 맡기는 위험을 피하려 Claude/Codex 시니어 2계통 + 저토큰 문서 사원 구조로 확장. Claude=Senior Developer, Codex=Design & Planning Lead(구 TD 진화, 분해·배정·기획·UI/UX)+QA. 문서는 저토큰 전담 사원 2명(Claude/Codex 관점). 실제 워크포스는 Paperclip에 구성 완료(PAPERCLIP-RECON.md).
+D12 ORG v4 (2026-07-27, 사용자 지시 — 외부 3안 채택): 반복되는 Opus 세션 한도 소진 대응으로 Meta-Loop 재편. **Opus=Board Advisor(온디맨드 크리틱, 핫패스 밖 — 자문은 CLI 크로스-리뷰가 수행, ThreeJSDev paused)**, **Codex(sol/terra)=Chief Operator/Senior(핫패스 주력)**, **Workers=Sonnet 5/Haiku 4.5**(구 Gemini 대체, 유료 API 미사용). 모델 라우터=복잡도+비용. **오케스트레이션은 CLI+CEO 유지**(Lean B가 에이전트 간 배정을 막으므로 에이전트 오케스트레이터 불가). 상세·라우터·Graph-of-Loops 개념 매핑은 PAPERCLIP-RECON.md "ORG v4" 참조.
 -->
 
 지휘 체계:
