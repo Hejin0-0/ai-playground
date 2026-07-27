@@ -30,10 +30,12 @@
 
 토큰 소모가 운영 최대 병목이라(ORG v4 계기), `/Documents/git-clone/3. 에이전트 프레임워크 & 오케스트레이션`에서 선별. **전 직무 공통 적용** — 어느 사원이든 큰 출력·로그·컨텍스트를 다룰 때.
 
-| skill | 무엇 | 상태 |
+**장착 상태 (2026-07-27)**: Paperclip 회사 스킬로 등록 완료(`company/<cid>/headroom-context-compression`, `.../rtk-token-killer`) + **CodexDev·CodexQA·Technical Director·Developer(Sonnet) 4명 desiredSkills 장착 완료**.
+
+| skill | 무엇 | 도구 자체 상태 |
 |---|---|---|
-| **token-efficiency/headroom** | 에이전트가 읽는 모든 것(툴 출력·로그·RAG·파일·대화이력)을 LLM 도달 전 압축 (60–95%↓, 가역). `headroom wrap claude\|codex`로 워커 감싸기·proxy·MCP·`headroom learn`(→AGENTS.md) | **미설치** — 도입 플레이북(스킬). 설치·측정 후 D4 검증 경로 밖부터 적용 |
-| **token-efficiency/rtk** | Rust CLI 프록시 — 셸 명령 출력을 LLM 도달 전 필터·압축 (60–90%↓). **글로벌 설치됨**. per-agent 훅(claude/codex) 연동 | 사용 중. **주의: 상주 데몬(paperclipai run 등) 감싸면 기동 멈춤 → 래퍼 스크립트로 우회** |
+| **token-efficiency/headroom** | 에이전트가 읽는 모든 것(툴 출력·로그·RAG·파일·대화이력)을 LLM 도달 전 압축 (60–95%↓, 가역). `headroom wrap claude\|codex`로 워커 감싸기·proxy·MCP·`headroom learn`(→AGENTS.md) | **바이너리 미설치** — 스킬(도입 플레이북)만 장착됨. 설치·측정 후 D4 검증 경로 **밖**부터 적용할 것 |
+| **token-efficiency/rtk** | Rust CLI 프록시 — 셸 명령 출력을 LLM 도달 전 필터·압축 (60–90%↓). per-agent 훅(claude/codex) 연동 | **설치·사용 중** (v0.43.0, 글로벌 훅). **주의: 상주 데몬(`paperclipai run` 등) 감싸면 기동 멈춤 → 래퍼 스크립트로 우회** |
 
 > 출처(둘 다): headroom `chopratejas/headroom` (Apache-2.0) · rtk `Rust Token Killer`. 상세·경고는 각 SKILL.md.
 

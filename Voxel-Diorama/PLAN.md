@@ -394,6 +394,8 @@ Voxel-Diorama/
    <!-- VOX-23(Codex Terra QA) 후속. loopback·단일 사용자 v0.1에선 실위험 낮음 → 백로그. -->
 11. 승인 액션 **인간 vs 에이전트 인증 게이트 (Phase 2 하드닝)** — `/api/tasks/:id/review` 브리지는 same-origin을 요구하나 `isSameOrigin`이 Origin 헤더 없는 요청을 신뢰(비브라우저 호출 허용 설계) → 로컬 비브라우저 프로세스가 approve/reject를 구동 가능. D4(승인=인간 전용)의 기술 게이트가 없음. **단 새 공격면 아님**: 에이전트는 이미 Paperclip 네이티브 `/api/approvals/{id}/approve`에 직접 접근 가능 → local_trusted 모드의 내재 속성. 개선안: 게임 UI만 보유하는 로컬 세션 토큰을 `/review`(및 승인 액션)에 요구. 격리 워크스페이스·low_trust_review와 같은 Phase 2 트러스트 하드닝 티어.
    <!-- VOX-14 승인 시 Claude 크로스-리뷰가 발견(구현자·Terra 미명시). v0.1 D4 집행은 거버넌스(AGENTS.md 자가승인 금지)+인간이 실제 조작자라는 사실 → 기록만, 지금 블로커 아님. -->
+12. **`/favicon.ico` 정적 제공 (legacy fallback)** — 현재 `<link rel="icon" href="/favicon.svg">` 명시 선언으로 브라우저가 `/favicon.ico`를 요청하지 않아 완료 조건('콘솔 오류 0')은 충족되나, 해당 경로를 직접 요청하면 여전히 404(VOX-29 QA). SVG favicon 미지원 구형 브라우저(구 Safari 등)는 `.ico`로 폴백하므로 배포 대상이 넓어지면 `public/favicon.ico` 추가.
+   <!-- VOX-29(Codex Terra) 유일 FAIL. 원 결함(자동 요청→404→콘솔 오류)은 해소됨. 로컬 macOS v0.1 단일 브라우저 환경에선 무의미 → 재작업 1사이클(토큰) 대비 이득 없어 백로그. 반려 지시를 '404 제거'로 문자대로 쓴 CEO 측 문구 모호성이 FAIL 판정의 직접 원인 — 향후 반려 지시는 '완료 조건' 기준으로 표현할 것. -->
 
 
 **v2 후보**: 관광 모드(섬·행성 보행) · 스냅샷 공개 퍼블리시(관전) · Slack 지시 채널 · GR 테마 · 물리 파편 붕괴.
