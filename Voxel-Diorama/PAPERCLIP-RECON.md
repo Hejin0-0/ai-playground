@@ -184,12 +184,14 @@ reportsTo는 조율 구조일 뿐 결정권 아님(승인·거절·방향은 인
 
 | 역할 | 모델 | Paperclip 에이전트 | 비고 |
 |---|---|---|---|
-| **Board Advisor** (온디맨드 크리틱, 핫패스 밖) | Opus 4.8 | ThreeJSDev = **paused** | 자문 기능은 **CLI 크로스-리뷰가 수행**(VOX-14/15 전례). 구현 배정 안 함 → Opus 소진 사이클 종료 |
+| **Board Advisor** (온디맨드 크리틱, 핫패스 밖) | **Opus 5** | CLI 세션(=Advisor) · ThreeJSDev = **paused** | 자문 기능은 **CLI 크로스-리뷰가 수행**(VOX-14/15/24 전례). 일상 구현 배정 안 함 → Opus 소진 사이클 종료. **단 아래 예외 참조** |
 | **Chief Operator / Senior** (핫패스) | GPT-5.6 | CodexDev(sol) 주력 구현 · Technical Director(terra) 기획 · CodexQA(terra) QA | Codex-first 유지 |
 | **Workers** (병렬 값싼 실행) | **Sonnet 5 / Haiku 4.5** | Developer→`claude-sonnet-5`(표준 구현) · Summarizer(haiku) 단순 | staged: 필요 시 활성화 |
 | Doc Writers | sonnet-4-6 / luna | DocWriter-Claude · DocWriter-Codex | paused |
 
-**모델 라우터** (복잡도+비용): 단순/반복 → Haiku 4.5 · 표준 구현 → Sonnet 5 · 시니어/복잡+QA → Codex(sol/terra) · 크리틱/전략/리스크/taste → **Opus 자문(CLI 온디맨드)**. 크로스-프로바이더 QA 유지.
+**모델 라우터** (복잡도+비용): 단순/반복 → Haiku 4.5 · 표준 구현 → Sonnet 5 · 시니어/복잡+QA → Codex(sol/terra) · 크리틱/전략/리스크/taste → **Opus 5 자문(CLI 온디맨드)**. 크로스-프로바이더 QA 유지.
+
+**⚠️ Opus 5 예외 — 핵심 부분은 Worker로도 투입** (사용자 확정 2026-07-27): "핫패스 밖"은 **기본값이지 금지가 아니다**. 프로젝트의 **중요·핵심 부분을 코딩할 때는 Opus 5가 Worker(구현자)로 직접 일할 수 있다**. 판단 기준 — 되돌리기 어렵거나 전체 구조를 좌우하는 코드(핵심 아키텍처·데이터 계약·보안/승인 경로·복구 로직), 또는 Codex/Sonnet가 2회 이상 반려된 난도 높은 작업. 이때는 쿼터 소모를 감수하고 Opus 5에 배정한다. 일상적 기능 구현·반복 작업은 종전대로 Codex 주력 + Sonnet/Haiku 워커.
 
 **중요 — 오케스트레이션은 CLI+CEO** (이미지의 "Orchestrator=GPT-5.6"과 다른 지점): 분해·배정·검증·종합은 CLI(나)+CEO(인간)가 수행. Paperclip 에이전트를 오케스트레이터로 두려면 `canAssignTasks:false`(Lean B)를 풀어야 하고 그럼 에이전트 자가 태스크 생성 위험이 부활 → **거버넌스상 CLI+CEO 오케스트레이션 유지**.
 
