@@ -280,6 +280,12 @@ function typeScore(el) {
 // 대형 사찰·신사는 OSM에서 경내를 대표하는 "복합체명" 노드 없이 건물 단위
 // (楼門/本殿 등)로만 개별 태깅된 경우가 흔하다 — 그래서 이름 매칭이 실패해도
 // 표지석/비석(typeScore 2)류로 확정하기 전에 근접 참배지 폴백을 먼저 시도한다.
+//
+// 단, "정확한 이름"은 typeScore와 무관하게 "근접하지만 이름이 다른" 후보보다
+// 항상 우선한다 — 그렇지 않으면 복합체 전체를 가리키는 실제 명칭 엔티티가
+// (예: 伏見稲荷大社 way, tourism=yes/heritage 태그라 typeScore 2) 그 옆의
+// 개별 건물(楼門 등, typeScore 0)에 밀려 오매칭된다. 그래서 "정확 이름(표지석
+// 포함)" 단계를 근접 폴백보다 앞에 둔다.
 function landmarkCandidateStages(elements, target, inBbox) {
   const NEAR_RADIUS_KM = 0.25;
   const hasName = (el) => !!el.tags?.name;
@@ -293,18 +299,19 @@ function landmarkCandidateStages(elements, target, inBbox) {
           typeScore(el) < 2 &&
           inBbox(elementCenterLatLon(el))
       ),
+    // 정확한 이름이면 표지석급 타입 태그라도 채택 — 실제 명칭 엔티티 우선.
+    () => elements.filter((el) => hasName(el) && el.tags.name === target.name && inBbox(elementCenterLatLon(el))),
+    // 최후 수단: 이름 매칭이 전혀 없을 때만 근접 참배지/명소로 폴백.
     () =>
       elements.filter((el) => {
         if (typeScore(el) >= 2 || !hasName(el)) return false;
         const ll = elementCenterLatLon(el);
         return ll && distKm(ll, target.near) <= NEAR_RADIUS_KM;
       }),
-    // 최후 수단: 표지석/비석류라도 정확한 이름이면 채택 (여전히 실제 위치의 real 데이터).
-    () => elements.filter((el) => hasName(el) && el.tags.name === target.name && inBbox(elementCenterLatLon(el))),
   ];
 }
 
-const STAGE_LABELS = ['정확 이름', '부분 이름', `근접(≤250m) 참배지/명소`, '정확 이름(표지석 포함)'];
+const STAGE_LABELS = ['정확 이름', '부분 이름', '정확 이름(표지석 포함)', `근접(≤250m) 참배지/명소`];
 
 function matchLandmark(elements, target, warnings) {
   const dlat = 1.5 / KM_LAT;
@@ -348,12 +355,22 @@ function matchLandmark(elements, target, warnings) {
   };
 }
 
+// typeScore만으로는 못 거르는 저질 후보 — 지엽적 "추정지" 사적 표지판
+// (historic=battlefield 등, MARKER_HISTORIC 밖의 값이라 typeScore 1로 통과됨)와
+// 관광 스탬프랠리 지점(tourism=attraction으로 오태깅되어 typeScore 0)을 이름 패턴으로 배제.
+const JUNK_NAME_PATTERN = /推定地$|^Stamp Point/;
+
 function extraLandmarks(elements, excludeNames, warnings, max) {
   const seen = new Set(excludeNames);
   const byName = new Map();
   for (const el of elements) {
     const nm = el.tags?.name;
     if (!nm || seen.has(nm) || byName.has(nm)) continue;
+    // 표지석/비석/경계석급(typeScore 2)은 디오라마 랜드마크로 부적합 — 제외.
+    // (수정 전에는 이 필터가 없어 "Stamp Point №2", "往来安全" 같은 표지판까지
+    // extra 랜드마크로 딸려 들어왔다.)
+    if (typeScore(el) >= 2) continue;
+    if (JUNK_NAME_PATTERN.test(nm)) continue;
     const ll = elementCenterLatLon(el);
     if (!ll) continue;
     // 광역 bbox 전체가 아니라 도심 반경(±9km) 안쪽만 — 외곽 노이즈 배제.

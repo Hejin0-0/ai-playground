@@ -64,8 +64,8 @@
 <text x="391.8" y="231.2" font-size="10" font-family="sans-serif" fill="#f2e6c9">二条城</text>
 <circle cx="380.9" cy="484.9" r="4" fill="#f2b544" stroke="#00000055"><title>東寺</title></circle>
 <text x="386.9" y="478.9" font-size="10" font-family="sans-serif" fill="#f2e6c9">東寺</text>
-<circle cx="536.3" cy="591.0" r="4" fill="#f2b544" stroke="#00000055"><title>楼門</title></circle>
-<text x="542.3" y="585.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">楼門</text>
+<circle cx="476.2" cy="577.4" r="4" fill="#f2b544" stroke="#00000055"><title>伏見稲荷大社</title></circle>
+<text x="482.2" y="571.4" font-size="10" font-family="sans-serif" fill="#f2e6c9">伏見稲荷大社</text>
 <circle cx="572.0" cy="316.3" r="4" fill="#f2b544" stroke="#00000055"><title>八坂神社</title></circle>
 <text x="578.0" y="310.3" font-size="10" font-family="sans-serif" fill="#f2e6c9">八坂神社</text>
 <circle cx="600.2" cy="220.5" r="4" fill="#f2b544" stroke="#00000055"><title>平安神宮</title></circle>
@@ -84,22 +84,8 @@
 <text x="466.0" y="438.1" font-size="10" font-family="sans-serif" fill="#f2e6c9">羅城門</text>
 <circle cx="453.3" cy="436.7" r="4" fill="#f2b544" stroke="#00000055"><title>京都タワー</title></circle>
 <text x="459.3" y="430.7" font-size="10" font-family="sans-serif" fill="#f2e6c9">京都タワー</text>
-<circle cx="464.0" cy="439.9" r="4" fill="#f2b544" stroke="#00000055"><title>電気鉄道事業発祥地</title></circle>
-<text x="470.0" y="433.9" font-size="10" font-family="sans-serif" fill="#f2e6c9">電気鉄道事業発祥地</text>
-<circle cx="469.8" cy="442.7" r="4" fill="#f2b544" stroke="#00000055"><title>輪型地蔵</title></circle>
-<text x="475.8" y="436.7" font-size="10" font-family="sans-serif" fill="#f2e6c9">輪型地蔵</text>
 <circle cx="471.4" cy="444.0" r="4" fill="#f2b544" stroke="#00000055"><title>正行院</title></circle>
 <text x="477.4" y="438.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">正行院</text>
-<circle cx="447.7" cy="427.0" r="4" fill="#f2b544" stroke="#00000055"><title>東本願寺所有地</title></circle>
-<text x="453.7" y="421.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">東本願寺所有地</text>
-<circle cx="460.1" cy="428.7" r="4" fill="#f2b544" stroke="#00000055"><title>東三地蔵尊</title></circle>
-<text x="466.1" y="422.7" font-size="10" font-family="sans-serif" fill="#f2e6c9">東三地蔵尊</text>
-<circle cx="427.4" cy="441.3" r="4" fill="#f2b544" stroke="#00000055"><title>新撰組最後の洛中屋敷跡の碑</title></circle>
-<text x="433.4" y="435.3" font-size="10" font-family="sans-serif" fill="#f2e6c9">新撰組最後の洛中屋敷跡の碑</text>
-<circle cx="432.8" cy="431.6" r="4" fill="#f2b544" stroke="#00000055"><title>神道町地蔵尊</title></circle>
-<text x="438.8" y="425.6" font-size="10" font-family="sans-serif" fill="#f2e6c9">神道町地蔵尊</text>
-<circle cx="436.9" cy="427.1" r="4" fill="#f2b544" stroke="#00000055"><title>往来安全</title></circle>
-<text x="442.9" y="421.1" font-size="10" font-family="sans-serif" fill="#f2e6c9">往来安全</text>
 <circle cx="459.1" cy="419.5" r="4" fill="#f2b544" stroke="#00000055"><title>東光寺</title></circle>
 <text x="465.1" y="413.5" font-size="10" font-family="sans-serif" fill="#f2e6c9">東光寺</text>
 <circle cx="475.5" cy="430.0" r="4" fill="#f2b544" stroke="#00000055"><title>願教寺</title></circle>
@@ -110,16 +96,30 @@
 <text x="444.0" y="413.1" font-size="10" font-family="sans-serif" fill="#f2e6c9">覚林寺</text>
 <circle cx="482.5" cy="458.5" r="4" fill="#f2b544" stroke="#00000055"><title>正久寺</title></circle>
 <text x="488.5" y="452.5" font-size="10" font-family="sans-serif" fill="#f2e6c9">正久寺</text>
-<circle cx="419.4" cy="433.7" r="4" fill="#f2b544" stroke="#00000055"><title>伊東甲子太郎襲撃推定地</title></circle>
-<text x="425.4" y="427.7" font-size="10" font-family="sans-serif" fill="#f2e6c9">伊東甲子太郎襲撃推定地</text>
 <circle cx="454.2" cy="415.5" r="4" fill="#f2b544" stroke="#00000055"><title>阿弥陀堂門</title></circle>
 <text x="460.2" y="409.5" font-size="10" font-family="sans-serif" fill="#f2e6c9">阿弥陀堂門</text>
-<circle cx="417.4" cy="462.6" r="4" fill="#f2b544" stroke="#00000055"><title>平重衡 受戒之地</title></circle>
-<text x="423.4" y="456.6" font-size="10" font-family="sans-serif" fill="#f2e6c9">平重衡 受戒之地</text>
-<circle cx="419.4" cy="432.6" r="4" fill="#f2b544" stroke="#00000055"><title>伊東甲子太郎外数名殉難之跡</title></circle>
-<text x="425.4" y="426.6" font-size="10" font-family="sans-serif" fill="#f2e6c9">伊東甲子太郎外数名殉難之跡</text>
-<circle cx="449.0" cy="414.5" r="4" fill="#f2b544" stroke="#00000055"><title>Stamp Point №2</title></circle>
-<text x="455.0" y="408.5" font-size="10" font-family="sans-serif" fill="#f2e6c9">Stamp Point №2</text>
+<circle cx="424.2" cy="419.0" r="4" fill="#f2b544" stroke="#00000055"><title>正光寺</title></circle>
+<text x="430.2" y="413.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">正光寺</text>
+<circle cx="419.0" cy="424.0" r="4" fill="#f2b544" stroke="#00000055"><title>油小路七条（油小路事件）</title></circle>
+<text x="425.0" y="418.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">油小路七条（油小路事件）</text>
+<circle cx="485.3" cy="429.4" r="4" fill="#f2b544" stroke="#00000055"><title>浄徳寺</title></circle>
+<text x="491.3" y="423.4" font-size="10" font-family="sans-serif" fill="#f2e6c9">浄徳寺</text>
+<circle cx="462.8" cy="488.9" r="4" fill="#f2b544" stroke="#00000055"><title>北向不動明王</title></circle>
+<text x="468.8" y="482.9" font-size="10" font-family="sans-serif" fill="#f2e6c9">北向不動明王</text>
+<circle cx="438.8" cy="409.6" r="4" fill="#f2b544" stroke="#00000055"><title>妙覚寺</title></circle>
+<text x="444.8" y="403.6" font-size="10" font-family="sans-serif" fill="#f2e6c9">妙覚寺</text>
+<circle cx="451.2" cy="492.8" r="4" fill="#f2b544" stroke="#00000055"><title>城興寺</title></circle>
+<text x="457.2" y="486.8" font-size="10" font-family="sans-serif" fill="#f2e6c9">城興寺</text>
+<circle cx="415.4" cy="475.7" r="4" fill="#f2b544" stroke="#00000055"><title>伏見稲荷大社 御旅所</title></circle>
+<text x="421.4" y="469.7" font-size="10" font-family="sans-serif" fill="#f2e6c9">伏見稲荷大社 御旅所</text>
+<circle cx="491.3" cy="465.5" r="4" fill="#f2b544" stroke="#00000055"><title>teamLab BioVortex</title></circle>
+<text x="497.3" y="459.5" font-size="10" font-family="sans-serif" fill="#f2e6c9">teamLab BioVortex</text>
+<circle cx="410.6" cy="471.0" r="4" fill="#f2b544" stroke="#00000055"><title>綜藝種智院跡 (Shugei Shuchiin Ato)</title></circle>
+<text x="416.6" y="465.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">綜藝種智院跡 (Shugei Shuchiin Ato)</text>
+<circle cx="438.2" cy="406.7" r="4" fill="#f2b544" stroke="#00000055"><title>金寶寺</title></circle>
+<text x="444.2" y="400.7" font-size="10" font-family="sans-serif" fill="#f2e6c9">金寶寺</text>
+<circle cx="479.4" cy="416.0" r="4" fill="#f2b544" stroke="#00000055"><title>浄真寺</title></circle>
+<text x="485.4" y="410.0" font-size="10" font-family="sans-serif" fill="#f2e6c9">浄真寺</text>
 <circle cx="450.0" cy="450.0" r="5" fill="none" stroke="#ff5a5a" stroke-width="2"/>
 <text x="458.0" y="466.0" font-size="11" font-family="sans-serif" fill="#ff5a5a">京都駅</text>
 <text x="40" y="24" font-size="16" font-family="sans-serif" fill="#e8edf5">Kyoto Geo-Truth — 도시 ±6km</text>

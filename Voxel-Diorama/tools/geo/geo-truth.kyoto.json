@@ -66,11 +66,11 @@
       "kind": "point",
       "zone": "A",
       "at": [
-        1.263,
-        -2.064
+        0.384,
+        -1.865
       ],
-      "osmName": "楼門",
-      "osmType": "way/105449733"
+      "osmName": "伏見稲荷大社",
+      "osmType": "node/11174591021"
     },
     {
       "id": "landmark-yasakajinja",
@@ -172,29 +172,7 @@
       "osmType": "relation/5333011"
     },
     {
-      "id": "landmark-extra-3-e99bbbe6b097e989",
-      "kind": "point",
-      "zone": "A",
-      "at": [
-        0.205,
-        0.148
-      ],
-      "osmName": "電気鉄道事業発祥地",
-      "osmType": "node/4317759886"
-    },
-    {
-      "id": "landmark-extra-4-e8bcaae59e8be59c",
-      "kind": "point",
-      "zone": "A",
-      "at": [
-        0.29,
-        0.107
-      ],
-      "osmName": "輪型地蔵",
-      "osmType": "node/12462493344"
-    },
-    {
-      "id": "landmark-extra-5-e6ada3e8a18ce999",
+      "id": "landmark-extra-3-e6ada3e8a18ce999",
       "kind": "point",
       "zone": "A",
       "at": [
@@ -205,62 +183,7 @@
       "osmType": "node/11281451897"
     },
     {
-      "id": "landmark-extra-6-e69db1e69cace9a1",
-      "kind": "point",
-      "zone": "A",
-      "at": [
-        -0.034,
-        0.337
-      ],
-      "osmName": "東本願寺所有地",
-      "osmType": "node/12167648957"
-    },
-    {
-      "id": "landmark-extra-7-e69db1e4b889e59c",
-      "kind": "point",
-      "zone": "A",
-      "at": [
-        0.148,
-        0.312
-      ],
-      "osmName": "東三地蔵尊",
-      "osmType": "node/7220546273"
-    },
-    {
-      "id": "landmark-extra-8-e696b0e692b0e7b5",
-      "kind": "point",
-      "zone": "A",
-      "at": [
-        -0.33,
-        0.127
-      ],
-      "osmName": "新撰組最後の洛中屋敷跡の碑",
-      "osmType": "node/6680892689"
-    },
-    {
-      "id": "landmark-extra-9-e7a59ee98193e794",
-      "kind": "point",
-      "zone": "A",
-      "at": [
-        -0.251,
-        0.27
-      ],
-      "osmName": "神道町地蔵尊",
-      "osmType": "node/7080175615"
-    },
-    {
-      "id": "landmark-extra-10-e5be80e69da5e5ae",
-      "kind": "point",
-      "zone": "A",
-      "at": [
-        -0.192,
-        0.335
-      ],
-      "osmName": "往来安全",
-      "osmType": "node/6972842204"
-    },
-    {
-      "id": "landmark-extra-11-e69db1e58589e5af",
+      "id": "landmark-extra-4-e69db1e58589e5af",
       "kind": "point",
       "zone": "A",
       "at": [
@@ -271,7 +194,7 @@
       "osmType": "node/10236669807"
     },
     {
-      "id": "landmark-extra-12-e9a198e69599e5af",
+      "id": "landmark-extra-5-e9a198e69599e5af",
       "kind": "point",
       "zone": "A",
       "at": [
@@ -282,7 +205,7 @@
       "osmType": "node/5184054170"
     },
     {
-      "id": "landmark-extra-13-e4b88de58b95e5a0",
+      "id": "landmark-extra-6-e4b88de58b95e5a0",
       "kind": "point",
       "zone": "A",
       "at": [
@@ -293,7 +216,7 @@
       "osmType": "node/10242296043"
     },
     {
-      "id": "landmark-extra-14-e8a69ae69e97e5af",
+      "id": "landmark-extra-7-e8a69ae69e97e5af",
       "kind": "point",
       "zone": "A",
       "at": [
@@ -304,7 +227,7 @@
       "osmType": "node/7152012027"
     },
     {
-      "id": "landmark-extra-15-e6ada3e4b985e5af",
+      "id": "landmark-extra-8-e6ada3e4b985e5af",
       "kind": "point",
       "zone": "A",
       "at": [
@@ -315,18 +238,7 @@
       "osmType": "node/1826792571"
     },
     {
-      "id": "landmark-extra-16-e4bc8ae69db1e794",
-      "kind": "point",
-      "zone": "A",
-      "at": [
-        -0.448,
-        0.238
-      ],
-      "osmName": "伊東甲子太郎襲撃推定地",
-      "osmType": "node/10657427962"
-    },
-    {
-      "id": "landmark-extra-17-e998bfe5bca5e999",
+      "id": "landmark-extra-9-e998bfe5bca5e999",
       "kind": "point",
       "zone": "A",
       "at": [
@@ -337,37 +249,125 @@
       "osmType": "way/99130358"
     },
     {
-      "id": "landmark-extra-18-e5b9b3e9878de8a1",
+      "id": "landmark-extra-10-e6ada3e58589e5af",
       "kind": "point",
       "zone": "A",
       "at": [
-        -0.477,
-        -0.185
+        -0.377,
+        0.454
       ],
-      "osmName": "平重衡 受戒之地",
-      "osmType": "node/7830894719"
+      "osmName": "正光寺",
+      "osmType": "way/569423717"
     },
     {
-      "id": "landmark-extra-19-e4bc8ae69db1e794",
+      "id": "landmark-extra-11-e6b2b9e5b08fe8b7",
       "kind": "point",
       "zone": "A",
       "at": [
-        -0.448,
-        0.254
+        -0.453,
+        0.381
       ],
-      "osmName": "伊東甲子太郎外数名殉難之跡",
-      "osmType": "node/7200564759"
+      "osmName": "油小路七条（油小路事件）",
+      "osmType": "node/10657427963"
     },
     {
-      "id": "landmark-extra-20-5374616d7020506f",
+      "id": "landmark-extra-12-e6b584e5beb3e5af",
       "kind": "point",
       "zone": "A",
       "at": [
-        -0.015,
-        0.52
+        0.517,
+        0.301
       ],
-      "osmName": "Stamp Point №2",
-      "osmType": "node/13913901763"
+      "osmName": "浄徳寺",
+      "osmType": "way/569772177"
+    },
+    {
+      "id": "landmark-extra-13-e58c97e59091e4b8",
+      "kind": "point",
+      "zone": "A",
+      "at": [
+        0.188,
+        -0.57
+      ],
+      "osmName": "北向不動明王",
+      "osmType": "way/565486778"
+    },
+    {
+      "id": "landmark-extra-14-e5a699e8a69ae5af",
+      "kind": "point",
+      "zone": "A",
+      "at": [
+        -0.164,
+        0.591
+      ],
+      "osmName": "妙覚寺",
+      "osmType": "node/10236577424"
+    },
+    {
+      "id": "landmark-extra-15-e59f8ee88888e5af",
+      "kind": "point",
+      "zone": "A",
+      "at": [
+        0.017,
+        -0.627
+      ],
+      "osmName": "城興寺",
+      "osmType": "node/5284029381"
+    },
+    {
+      "id": "landmark-extra-16-e4bc8fe8a68be7a8",
+      "kind": "point",
+      "zone": "A",
+      "at": [
+        -0.507,
+        -0.376
+      ],
+      "osmName": "伏見稲荷大社 御旅所",
+      "osmType": "way/723492377"
+    },
+    {
+      "id": "landmark-extra-17-7465616d4c616220",
+      "kind": "point",
+      "zone": "A",
+      "at": [
+        0.604,
+        -0.227
+      ],
+      "osmName": "teamLab BioVortex",
+      "osmType": "node/13360558540"
+    },
+    {
+      "id": "landmark-extra-18-e7b69ce8979de7a8",
+      "kind": "point",
+      "zone": "A",
+      "at": [
+        -0.577,
+        -0.308
+      ],
+      "osmName": "綜藝種智院跡 (Shugei Shuchiin Ato)",
+      "osmType": "node/816248052"
+    },
+    {
+      "id": "landmark-extra-19-e98791e5afb6e5af",
+      "kind": "point",
+      "zone": "A",
+      "at": [
+        -0.173,
+        0.633
+      ],
+      "osmName": "金寶寺",
+      "osmType": "node/10236577417"
+    },
+    {
+      "id": "landmark-extra-20-e6b584e79c9fe5af",
+      "kind": "point",
+      "zone": "A",
+      "at": [
+        0.43,
+        0.498
+      ],
+      "osmName": "浄真寺",
+      "osmType": "node/12150347963"
     },
     {
       "id": "road-e7838fe4b8b8e980",
