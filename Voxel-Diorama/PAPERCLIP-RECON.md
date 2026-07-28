@@ -197,6 +197,42 @@ reportsTo는 조율 구조일 뿐 결정권 아님(승인·거절·방향은 인
 
 **Graph-of-Loops 개념 매핑** (이미지 3, 마케팅 도메인이라 문자적 루프는 무관): Company Brain=PLAN.md+PAPERCLIP-RECON.md+CLAUDE.md · Anchor(에이전트가 위조 못 하는 실측)=main 무결성+실제 test/build/WebGL 씬그래프+실 Paperclip 상태 · Frozen rules=거버넌스(main 보호·in_review·자가승인 금지·정확 pin) · Human taste gate=D4 · Audit loop=v0.1 YAGNI.
 
+## 🛡️ ORG v5 — 최상위 모델을 검수 게이트로 (2026-07-28)
+
+**계기 2가지.** (1) 내가 만든 모델 드리프트 — `gpt-5.6-pro`가 런타임에 `gpt-5.3-codex-spark`로 폴백돼 이슈가 `blocked`, 이어 Developer를 `claude-opus-4-8`로 올려 **세션 한도 소진**. ORG v4가 끝내려던 "Opus 먹통 → 대체자" 사이클을 그대로 재현했다. (2) 사용자 정정 — **`gpt-5.6` 계열 서열은 sol(최상위) > terra(중간) > luna(하위)** 이며, 이를 역할 중요도에 맞게 재분배하라는 지시.
+
+**핵심 판단 — 최상위 모델은 구현이 아니라 검수에 둔다.** 근거는 이 프로젝트의 실측 기록이다. sol이 구현한 VOX-25는 1·2라운드 연속으로 결함을 남겼고, terra의 검수 1회가 실제 결함 4건(승인 철회 무효화 포함)을 찾았다. 게다가 **D9 때문에 오판이 영구적이다** — 잘못된 반려는 멀쩡한 작업 위에 영구 폐허를 세운다. 되돌릴 수 없는 쪽은 검수다.
+
+| 자리 | 모델 | 소재 | 상태 |
+|---|---|---|---|
+| **적대 검수 게이트** | `gpt-5.6-sol` | **CLI 플러그인** (Paperclip 에이전트 아님) | 신설 |
+| **B — 복잡 구현** | `gpt-5.6-terra` | CodexDev | 활성 |
+| **A — 단순·반복** | `gpt-5.6-luna` | DocWriter-Codex | paused (필요 시) |
+| **C — QA 기본 / 구현 겸업** | `claude-sonnet-5` | Developer | 활성 |
+| 체크포인트 QA | `gpt-5.6-terra` | CodexQA | 활성 |
+| 핵심 에스컬레이션 | `claude-opus-4-8` | ThreeJSDev | paused |
+| **Advisor / CEO 대리** | `claude-opus-5` | CLI 세션 | 상시 |
+| 기획·분해 | `gpt-5.6-sol` | Technical Director | **paused** |
+
+Technical Director를 내린 이유: sol 자리를 검수 게이트가 가져갔고, 분해·배정은 Lean B 아래서 CLI+CEO가 수행하며, 실제로 한 번도 돌지 않았다. 노는 활성 에이전트는 설정 표면만 늘린다(v0.1 활성 3명 YAGNI). 분해가 병목이 될 때 되살린다.
+
+> **R-1. 한 업무에서 구현자와 QA는 반드시 다른 provider.**
+> 구현 luna/terra(Codex) → QA Developer(sonnet5) · 구현 sonnet5/opus(Claude) → QA CodexQA(terra).
+> terra 자리가 둘이지만 이 규칙 때문에 terra가 자기 작업을 검수하는 일은 없다. **크로스-프로바이더 QA가 처음으로 실제 복원된다** — 종전은 구현 sol · QA terra로 둘 다 Codex였다.
+
+> **R-2. 모델 변경 후에는 실제 런 1회의 로그에서 모델명을 눈으로 확인한다.**
+> `GET /api/agents/{id}`가 설정값을 그대로 돌려줘도 런타임은 다른 모델로 폴백할 수 있다. **설정 리드백은 검증이 아니다.**
+
+### Codex 플러그인 게이트 (`openai/codex-plugin-cc` v1.0.6)
+
+`/codex:adversarial-review` — 조종 가능한 도전 리뷰. **읽기 전용이라 승인·커밋·자가배정이 구조적으로 불가능** → D4/Lean B를 어길 수단 자체가 없다. 이것이 Paperclip 에이전트 오케스트레이터를 금지하면서도 이 게이트는 허용하는 이유다.
+
+**이건 Orchestrator가 아니다.** 프로젝트를 분해해 여러 워커에 배정하는 기능은 없다. 리뷰 + 단건 위임(`rescue`) + 세션 이관(`transfer`)이다. 그렇게 부르면 없는 기능을 기대하게 된다.
+
+- ⚠️ **`review`·`adversarial-review`는 `--model`을 받지 않는다** (`rescue`만 받는다). 검수 게이트의 모델은 **`~/.codex/config.toml`의 전역 `model`** 로만 정해진다. 그래서 이 값을 `gpt-5.6-luna` → `gpt-5.6-sol`로 바꿨다 (백업: `~/.codex/config.toml.bak-*`). **부작용**: Codex 데스크톱·CLI 전체의 기본 모델도 sol이 된다. 위임 시에는 `rescue --model gpt-5.6-terra|luna`로 명시 오버라이드한다.
+- 운영 이득: Paperclip QA 이슈 발주 경로에서 나던 사고 3종(워크스페이스 null → 빈 마운트 오판정 · dispatch 미발화 · 커밋 미push)이 게이트 검수에는 존재하지 않는다. **일상 검수는 게이트로, Paperclip QA 이슈는 Phase 체크포인트급에만.** 판정문은 이슈 코멘트로 붙여 기록을 남긴다.
+- ⚠️ **Codex 계통 전체가 `~/.codex/auth.json` 하나를 공유한다.** 이 토큰이 revoke되면 게이트와 Paperclip codex_local 사원(CodexDev·CodexQA)이 **동시에** 죽는다. 증상: `Your access token could not be refreshed because your refresh token was revoked`. 주의 — `codex login status`는 이 상태에서도 "Logged in"이라고 답한다(신뢰 불가). 복구는 인간이 `codex login`. 이때 Claude 계통(Developer/ThreeJSDev)은 무관하게 살아 있으므로 **provider 이중화가 실제로 값을 한다**.
+
 **gotcha (운영)**:
 - **서버 기동은 RTK 우회 필수**: `npx paperclipai run`을 RTK 훅이 `rtk npx …`로 감싸면 상주 서버 출력을 버퍼링하며 기동 방해. 런처 스크립트(`bash <script>`)로 감싸 내부 npx가 훅에 안 걸리게 실행. 기동 후 `/api/health`로 확인.
 - 에이전트 pause/resume은 `POST /api/agents/{id}/pause|resume` (회사 스코프 경로 아님 — v722 기준).
