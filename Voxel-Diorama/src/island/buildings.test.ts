@@ -352,4 +352,102 @@ assert.equal(
   "C5: repeated polling/app restarts must reproduce identical ruins, buildings and plots",
 );
 
+// VOX-26 retry 2 (CLI Advisor rejection of 67a0f11): C3/D9 are claims about *two
+// points in time*, not one snapshot — a single-snapshot assertion cannot catch a ruin
+// silently sliding to a new plot as later, unrelated events complete. These compare
+// projectIsland across snapshots that model the island growing over time.
+
+// Scenario A: issue X is rejected once, then reworked and approved. The ruin created
+// at t2 must sit on the same plot at t3 as it did at t2, and the rework building must
+// take a brand-new plot rather than its own ruin's plot.
+const rootOnly = [
+  {
+    id: "solo-root",
+    parentId: null,
+    status: "done",
+    priority: "medium",
+    completedAt: null,
+    approved: null,
+  },
+] as const;
+
+const xMidReworkSnapshot = [
+  ...rootOnly,
+  {
+    id: "issue-x",
+    parentId: "solo-root",
+    status: "todo",
+    priority: "high",
+    completedAt: null,
+    approved: false,
+    ruinHistory: {
+      attemptNumber: 2,
+      ruins: [{ approvalId: "appr-x1", attemptNumber: 1, decisionNote: "1차 반려", createdAt: "2026-07-28T01:00:00.000Z" }],
+    },
+  },
+] as const;
+
+const xReworkedApprovedSnapshot = [
+  ...rootOnly,
+  {
+    id: "issue-x",
+    parentId: "solo-root",
+    status: "done",
+    priority: "high",
+    completedAt: "2026-07-28T02:00:00.000Z",
+    approved: true,
+    ruinHistory: {
+      attemptNumber: 2,
+      ruins: [{ approvalId: "appr-x1", attemptNumber: 1, decisionNote: "1차 반려", createdAt: "2026-07-28T01:00:00.000Z" }],
+    },
+  },
+] as const;
+
+const t2 = projectIsland(xMidReworkSnapshot, "solo-root");
+const t3 = projectIsland(xReworkedApprovedSnapshot, "solo-root");
+
+assert.equal(t2.ruins.length, 1, "sanity: rejection produces exactly one ruin at t2");
+assert.deepEqual(
+  t3.ruins.find((ruin) => ruin.issueId === "issue-x")?.plot,
+  t2.ruins.find((ruin) => ruin.issueId === "issue-x")?.plot,
+  "C3/D9: the ruin's plot at t3 (after rework is approved) must be unchanged from t2 (right after rejection) — ruins are permanent",
+);
+assert.notDeepEqual(
+  t3.buildings.find((building) => building.issueId === "issue-x")?.plot,
+  t3.ruins.find((ruin) => ruin.issueId === "issue-x")?.plot,
+  "§3.4 rule 3: the rework's approved building must land on a new plot, not its own ruin's plot",
+);
+
+// Scenario B: once issue X's full history (ruin + rework building) is established,
+// an unrelated issue Y completing later must not move X's ruin or building.
+const beforeY = projectIsland(xReworkedApprovedSnapshot, "solo-root");
+const afterYSnapshot = [
+  ...xReworkedApprovedSnapshot,
+  {
+    id: "issue-y",
+    parentId: "solo-root",
+    status: "done",
+    priority: "medium",
+    completedAt: "2026-07-28T03:00:00.000Z",
+    approved: true,
+  },
+] as const;
+const afterY = projectIsland(afterYSnapshot, "solo-root");
+
+assert.deepEqual(
+  afterY.ruins.find((ruin) => ruin.issueId === "issue-x")?.plot,
+  beforeY.ruins.find((ruin) => ruin.issueId === "issue-x")?.plot,
+  "D9: an unrelated task (Y) completing later must not move issue X's existing ruin",
+);
+assert.deepEqual(
+  afterY.buildings.find((building) => building.issueId === "issue-x")?.plot,
+  beforeY.buildings.find((building) => building.issueId === "issue-x")?.plot,
+  "D9/C3: an unrelated task (Y) completing later must not move issue X's existing building",
+);
+assert.deepEqual(
+  afterY.buildings.find((building) => building.issueId === "issue-y")?.plot,
+  { x: 1, z: 1 },
+  "sanity: Y claims the next free plot in the shared spiral (after X's ruin and building) rather than reusing either",
+);
+
 console.log("buildings.test.ts: all checks passed");

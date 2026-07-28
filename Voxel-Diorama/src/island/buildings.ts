@@ -147,6 +147,42 @@ function collectRuins(tasks: readonly BuildingTask[], rootIssueId: string): Ruin
   });
 }
 
+interface PlacementEvent {
+  key: string;
+  at: number;
+  sortKey: string;
+}
+
+// D8/D9: every building, adjustment and ruin claims a plot from one shared spiral,
+// ordered by *when it happened* (completion or rejection time) rather than by which
+// array it currently sits in or how many items are ahead of it in a fixed segment.
+// A new event is appended to this timeline and — as long as its timestamp is not
+// earlier than every existing one, which real server timestamps guarantee — it lands
+// after all previously-placed events, so it can only ever claim the next unused plot
+// and never shifts one already handed out (§3.4 rule 3, C3). Because a rejection's
+// createdAt always precedes its rework's completedAt, the ruin is necessarily placed
+// before the rework building, so the rework can never land on its own ruin's plot
+// without any extra avoidance logic.
+//
+// Residual edge case (documented, not defended against): if a later poll surfaces an
+// event whose timestamp is *earlier* than an already-assigned event's timestamp, that
+// earlier event inserts before it in the sort and shifts everything from that point
+// on. This cannot happen from normal approval flow (server timestamps only move
+// forward for a given task), so it is left as a known boundary rather than solved with
+// speculative clock-skew handling.
+function assignPlots(events: readonly PlacementEvent[]): Map<string, { x: number; z: number }> {
+  const ordered = [...events].sort((a, b) => {
+    if (a.at !== b.at) return a.at < b.at ? -1 : 1;
+    return a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0;
+  });
+  const plots = spiralPlots(ordered.length);
+  const byKey = new Map<string, { x: number; z: number }>();
+  ordered.forEach((event, index) => {
+    byKey.set(event.key, plots[index]);
+  });
+  return byKey;
+}
+
 export function projectIsland(
   tasks: readonly BuildingTask[],
   rootIssueId: string,
@@ -160,32 +196,46 @@ export function projectIsland(
     (task) => task.approved !== true || task.priority === null,
   );
   const ruinSources = collectRuins(tasks, rootIssueId);
-  // D8: buildings, adjustments and ruins share one deterministic spiral — a reworked
-  // building never lands on its own earlier ruin's plot because ruins always take the
-  // plots after every building/adjustment (§3.4 rule 3, C3).
-  const plots = spiralPlots(buildable.length + adjustments.length + ruinSources.length);
+
+  const plots = assignPlots([
+    ...buildable.map((task) => ({
+      key: `building:${task.id}`,
+      at: normalizeTimestamp(task.completedAt),
+      sortKey: task.id,
+    })),
+    ...adjustments.map((task) => ({
+      key: `adjustment:${task.id}`,
+      at: normalizeTimestamp(task.completedAt),
+      sortKey: task.id,
+    })),
+    ...ruinSources.map((ruin) => ({
+      key: `ruin:${ruin.issueId}:${ruin.attemptNumber}`,
+      at: ruin.at,
+      sortKey: ruin.sortId,
+    })),
+  ]);
 
   return {
-    buildings: buildable.map((task, index) => {
+    buildings: buildable.map((task) => {
       const attemptNumber = task.ruinHistory?.attemptNumber ?? 1;
       return {
         issueId: task.id,
         attemptNumber,
         priority: task.priority,
         kind: buildingKind(task.id, attemptNumber),
-        plot: plots[index],
+        plot: plots.get(`building:${task.id}`)!,
         score: priorityScore(task.priority),
       };
     }),
-    adjustments: adjustments.map((task, index) => ({
+    adjustments: adjustments.map((task) => ({
       issueId: task.id,
-      plot: plots[buildable.length + index],
+      plot: plots.get(`adjustment:${task.id}`)!,
     })),
-    ruins: ruinSources.map((ruin, index) => ({
+    ruins: ruinSources.map((ruin) => ({
       issueId: ruin.issueId,
       attemptNumber: ruin.attemptNumber,
       decisionNote: ruin.decisionNote,
-      plot: plots[buildable.length + adjustments.length + index],
+      plot: plots.get(`ruin:${ruin.issueId}:${ruin.attemptNumber}`)!,
     })),
   };
 }
