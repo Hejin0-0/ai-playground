@@ -150,6 +150,76 @@ function jsonResponse(status: number, code: string, message: string): CachedResp
 
 const REVIEW_PATH = /^\/api\/tasks\/([^/]+)\/review$/;
 
+// The board-governance approval this decision needs doesn't exist yet for a
+// freshly in_review issue — nothing in this stack creates it (§0/결함 A).
+// Lazily creates one right when a decision is about to be made (not when
+// in_review is first entered — no watcher, no separate creation path) so its
+// createdAt lands at decision time, matching "거절이 일어난 때" for ruin
+// placement. Returns the existing/created approval id, or an error response
+// to bubble straight back to the caller.
+async function ensurePendingApproval(
+  taskId: string,
+  target: string,
+  headers: http.IncomingHttpHeaders,
+  timeoutMs: number,
+): Promise<{ id: string } | { error: CachedResponse }> {
+  const issueResponse = await forwardRequest(
+    target,
+    {
+      method: "GET",
+      path: `/api/issues/${encodeURIComponent(taskId)}`,
+      headers,
+      body: Buffer.alloc(0),
+    },
+    timeoutMs,
+  );
+  if (issueResponse.status < 200 || issueResponse.status >= 300) return { error: issueResponse };
+
+  let issue: unknown;
+  try {
+    issue = JSON.parse(issueResponse.body.toString());
+  } catch {
+    return { error: jsonResponse(502, "invalid_upstream_response", "Paperclip returned invalid issue JSON") };
+  }
+  const companyId =
+    issue && typeof issue === "object" ? (issue as Record<string, unknown>).companyId : undefined;
+  if (typeof companyId !== "string" || !companyId) {
+    return {
+      error: jsonResponse(502, "invalid_upstream_response", "issue response is missing companyId"),
+    };
+  }
+
+  const createResponse = await forwardRequest(
+    target,
+    {
+      method: "POST",
+      path: `/api/companies/${encodeURIComponent(companyId)}/approvals`,
+      headers: { ...headers, "content-type": "application/json" },
+      body: Buffer.from(
+        JSON.stringify({
+          type: "request_board_approval",
+          payload: { source: "voxel-diorama-review", issueId: taskId },
+          issueIds: [taskId],
+        }),
+      ),
+    },
+    timeoutMs,
+  );
+  if (createResponse.status < 200 || createResponse.status >= 300) return { error: createResponse };
+
+  let created: unknown;
+  try {
+    created = JSON.parse(createResponse.body.toString());
+  } catch {
+    return { error: jsonResponse(502, "invalid_upstream_response", "Paperclip returned invalid approval JSON") };
+  }
+  const id = created && typeof created === "object" ? (created as Record<string, unknown>).id : undefined;
+  if (typeof id !== "string" || !id) {
+    return { error: jsonResponse(502, "invalid_upstream_response", "created approval response is missing id") };
+  }
+  return { id };
+}
+
 async function forwardReview(
   req: IncomingMessage,
   target: string,
@@ -203,7 +273,7 @@ async function forwardReview(
   if (!Array.isArray(approvals)) {
     return jsonResponse(502, "invalid_upstream_response", "Paperclip returned an invalid approval list");
   }
-  const approval = approvals.find(
+  const found = approvals.find(
     (candidate) =>
       candidate &&
       typeof candidate === "object" &&
@@ -211,26 +281,63 @@ async function forwardReview(
       ((candidate as Record<string, unknown>).status === "pending" ||
         (decision !== "request_changes" && (candidate as Record<string, unknown>).status === "revision_requested")),
   ) as Record<string, unknown> | undefined;
-  if (!approval) {
-    return jsonResponse(
-      409,
-      "linked_pending_approval_not_found",
-      "the task has no linked approval awaiting this decision",
-    );
+
+  let approvalId: string;
+  if (found) {
+    approvalId = String(found.id);
+  } else {
+    const ensured = await ensurePendingApproval(taskId, target, req.headers, timeoutMs);
+    if ("error" in ensured) return ensured.error;
+    approvalId = ensured.id;
   }
 
   const action = decision === "request_changes" ? "request-revision" : decision;
   const decisionBody = Buffer.from(JSON.stringify({ decisionNote: reason || null }));
-  return forwardRequest(
+  const decisionResponse = await forwardRequest(
     target,
     {
       method: "POST",
-      path: `/api/approvals/${encodeURIComponent(String(approval.id))}/${action}`,
+      path: `/api/approvals/${encodeURIComponent(approvalId)}/${action}`,
       headers: { ...req.headers, "content-type": "application/json" },
       body: decisionBody,
     },
     timeoutMs,
   );
+  if (decisionResponse.status < 200 || decisionResponse.status >= 300) return decisionResponse;
+
+  // §3.4: Paperclip does not auto-transition issue status on approval
+  // decisions (2026-07-28 probe, VOX-37) — a separate PATCH is required, or
+  // approving in-game leaves the issue in_review forever and no building is
+  // ever placed. request_changes deliberately does NOT transition: it keeps
+  // the current PlacementAttempt open (§3.4 규칙 6) instead of ending it, and
+  // transitioning here would throw off D8's attempt-number derivation.
+  if (decision === "approve" || decision === "reject") {
+    const nextStatus = decision === "approve" ? "done" : "todo";
+    const transitionResponse = await forwardRequest(
+      target,
+      {
+        method: "PATCH",
+        path: `/api/issues/${encodeURIComponent(taskId)}`,
+        headers: { ...req.headers, "content-type": "application/json" },
+        body: Buffer.from(JSON.stringify({ status: nextStatus })),
+      },
+      timeoutMs,
+    );
+    if (transitionResponse.status < 200 || transitionResponse.status >= 300) {
+      // The decision already landed upstream — reporting 200 here would lie
+      // about game state (issue stuck in_review, no building/ruin placed).
+      // Surface it as a distinct failure so the caller can retry the PATCH
+      // rather than silently disagreeing with Paperclip's actual state.
+      return jsonResponse(
+        502,
+        "issue_transition_failed",
+        `${action} decision was recorded, but PATCH /api/issues/${taskId} to status "${nextStatus}" failed ` +
+          `with upstream status ${transitionResponse.status}`,
+      );
+    }
+  }
+
+  return decisionResponse;
 }
 
 interface PaperclipProxyOptions {
