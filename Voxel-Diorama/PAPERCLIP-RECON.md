@@ -42,6 +42,27 @@ securitySchemes 3종: `BoardSessionAuth`(세션 쿠키) · `BoardApiKeyAuth`(인
 - `POST /api/issues/{id}/approvals`로 이슈↔승인 연결, `GET/POST /api/approvals/{id}/comments`로 코멘트.
 - 회사 governance 승인(`POST /api/companies/{companyId}/approvals`, type `hire_agent|approve_ceo_strategy|budget_override_required|request_board_approval`)은 작업 검수와 **별개** — 혼동 금지.
 
+**⚠️ 위 표의 "세계 표현" 열은 우리가 구현할 결과지 API의 동작이 아니다** (2026-07-28 probe 이슈 VOX-37로 실측):
+
+- **승인/거절해도 이슈 `status`는 자동 전이되지 않는다.** 거절 후에도 이슈는 원래 상태(`backlog`) 그대로였다. `승인→done` · `거절→todo` 는 **별도 `PATCH /api/issues/{id}`** 로 우리가 직접 해야 한다. 표를 읽고 자동 전이를 기대하면 조용히 어긋난다.
+- **결정 이력은 영구 보존된다.** `GET /api/issues/{id}/approvals` 는 `rejected` · `revision_requested` · `approved` 레코드를 **나란히** 돌려준다 — 최신 결정이 이전 레코드를 덮어쓰지 않는다. 각 레코드에 `decisionNote`(사유)와 `decidedAt`이 붙는다.
+  → **시도 이력(attemptNumber)·폐허 목록·반려 사유는 전부 서버에서 파생 가능하다. 로컬 영속화 불필요** (VOX-26 설계 근거).
+  → 반대로 `src/hud/tasks.ts:hasApprovedReview()` 처럼 "승인됐나"만 볼 때는 **반드시 최신 1건만** 봐야 한다. 목록에 `approved`가 있다는 이유로 true를 돌려주면 철회된 승인이 건물을 세운 채로 남는다.
+
+## 📖 OpenAPI 스펙이 있다 (2026-07-28)
+
+`GET /api/openapi.json` (= `/openapi.json`) 이 **475개 경로의 전체 스펙**을 돌려준다. 요청/응답 스키마·required 필드·enum 전부 포함.
+
+이걸 모르고 Phase 1 내내 엔드포인트를 하나씩 찔러가며 존재 여부를 추측했다. `/api/models`·`/api/project-workspaces` 부재 판정도, 승인 3단계 경로 발견도 전부 이 파일 한 번이면 끝날 일이었다.
+
+**API 관련 질문이 생기면 probe보다 먼저 이 스펙을 조회한다.**
+
+```bash
+curl -s http://127.0.0.1:3100/api/openapi.json | python3 -c "import json,sys; d=json.load(sys.stdin); [print(m.upper(), p) for p in sorted(d['paths']) for m in d['paths'][p] if m in ('get','post','patch','delete') and 'approval' in p]"
+```
+
+⚠️ 단 스펙은 **경로의 존재**만 보증한다. 위의 "거절해도 status 자동 전이 없음" 같은 **런타임 동작은 스펙에 없다** — 그건 여전히 실측해야 한다.
+
 ## 조직·예산 (D12·L3 해소)
 
 - **고용**: `POST /api/companies/{companyId}/agent-hires` — role enum에 `engineer·pm·qa·cto·devops·designer·pm...` 존재. **Developer=role `engineer`(title "ThreeJSDev"), TD=role `pm` 또는 `cto`(title "Technical Director")**. (Paperclip에 "Technical Director"는 title, role은 enum에서 선택.)
@@ -222,6 +243,9 @@ Technical Director를 내린 이유: sol 자리를 검수 게이트가 가져갔
 
 > **R-2. 모델 변경 후에는 실제 런 1회의 로그에서 모델명을 눈으로 확인한다.**
 > `GET /api/agents/{id}`가 설정값을 그대로 돌려줘도 런타임은 다른 모델로 폴백할 수 있다. **설정 리드백은 검증이 아니다.**
+> 확인 위치: `~/.paperclip/instances/default/data/run-logs/{companyId}/{agentId}/{runId}.ndjson`. runId는 `GET /api/issues/{id}/runs`. (이 응답 자체에는 모델 필드가 없다.)
+
+**R-1 일시 중단 — VOX-26 (2026-07-28).** Codex 계통 전원이 쿼터 소진으로 정지해 구현·검수를 둘 다 Claude로 편성했다(구현 Developer `claude-sonnet-5` · 적대 검수 CLI Advisor `claude-opus-5`). R-1의 provider 분리는 깨지지만 "구현자 ≠ 검수자"와 "가장 강한 가용 모델을 되돌릴 수 없는 쪽에 둔다"는 ORG v5 본지는 유지된다. Codex 복구 시 원상 복귀. **이탈은 기록으로만 허용하고 기본값으로 굳히지 않는다.**
 
 ### Codex 플러그인 게이트 (`openai/codex-plugin-cc` v1.0.6)
 
@@ -232,6 +256,8 @@ Technical Director를 내린 이유: sol 자리를 검수 게이트가 가져갔
 - ⚠️ **`review`·`adversarial-review`는 `--model`을 받지 않는다** (`rescue`만 받는다). 검수 게이트의 모델은 **`~/.codex/config.toml`의 전역 `model`** 로만 정해진다. 그래서 이 값을 `gpt-5.6-luna` → `gpt-5.6-sol`로 바꿨다 (백업: `~/.codex/config.toml.bak-*`). **부작용**: Codex 데스크톱·CLI 전체의 기본 모델도 sol이 된다. 위임 시에는 `rescue --model gpt-5.6-terra|luna`로 명시 오버라이드한다.
 - 운영 이득: Paperclip QA 이슈 발주 경로에서 나던 사고 3종(워크스페이스 null → 빈 마운트 오판정 · dispatch 미발화 · 커밋 미push)이 게이트 검수에는 존재하지 않는다. **일상 검수는 게이트로, Paperclip QA 이슈는 Phase 체크포인트급에만.** 판정문은 이슈 코멘트로 붙여 기록을 남긴다.
 - ⚠️ **Codex 계통 전체가 `~/.codex/auth.json` 하나를 공유한다.** 이 토큰이 revoke되면 게이트와 Paperclip codex_local 사원(CodexDev·CodexQA)이 **동시에** 죽는다. 증상: `Your access token could not be refreshed because your refresh token was revoked`. 주의 — `codex login status`는 이 상태에서도 "Logged in"이라고 답한다(신뢰 불가). 복구는 인간이 `codex login`. 이때 Claude 계통(Developer/ThreeJSDev)은 무관하게 살아 있으므로 **provider 이중화가 실제로 값을 한다**.
+- ⚠️ **`codex login`에는 ChatGPT 로그인과 API 키 두 모드가 있고, 실패 증상이 서로 다르다** (2026-07-28). API 키 모드로 로그인하면 `auth.json`이 `{auth_mode, OPENAI_API_KEY}` 형태가 되고(`tokens`가 사라진다), 그 키에 크레딧이 없으면 **모든 모델에서** `ERROR: Quota exceeded. Check your plan and billing details.` 가 난다 — sol도 luna도 똑같이 죽으므로 모델 문제로 오진하기 쉽다. ChatGPT 구독 쿼터를 쓰려면 재로그인 시 **"Sign in with ChatGPT"** 를 골라야 한다. 판별법: `auth.json`에 `tokens.id_token`이 있으면 ChatGPT 모드, `OPENAI_API_KEY`만 있으면 키 모드.
+  ⚠️ `auth.json`을 통째로 출력하지 말 것 — 키 모드에서는 평문 API 키가 그대로 찍혀 세션 로그에 남는다. 필요한 건 모드 판별뿐이므로 키 존재 여부만 확인한다.
 
 **gotcha (운영)**:
 - **서버 기동은 RTK 우회 필수**: `npx paperclipai run`을 RTK 훅이 `rtk npx …`로 감싸면 상주 서버 출력을 버퍼링하며 기동 방해. 런처 스크립트(`bash <script>`)로 감싸 내부 npx가 훅에 안 걸리게 실행. 기동 후 `/api/health`로 확인.
@@ -250,5 +276,5 @@ Technical Director를 내린 이유: sol 자리를 검수 게이트가 가져갔
 
   결과: `GET /api/issues/{id}/approvals` → `status:"approved"`, `decidedByUserId:"local-board"`. **순서를 지켜야 한다** — 승인 레코드 없이 `done`으로만 밀면 `hasApprovedReview`가 false라 건물이 아니라 **[조정 필요] 마커**가 된다(PLAN §3.4-4 검수 우회 규칙이 그대로 발동).
 
-  ⚠️ 세 엔드포인트 모두 `AgentBearerAuth`를 허용한다 → **사원이 자기 승인을 위조할 수 있다**. D4가 API 층에서는 강제되지 않는다는 뜻이고, v0.1은 이를 수용 부채로 둔다(PLAN §9-11). ⚠️ `src/hud/review.ts`의 `createReviewSubmitter`가 없는 라우트(`/api/tasks/{id}/review`)를 호출하고 있다(백로그).
+  ⚠️ 세 엔드포인트 모두 `AgentBearerAuth`를 허용한다 → **사원이 자기 승인을 위조할 수 있다**. D4가 API 층에서는 강제되지 않는다는 뜻이고, v0.1은 이를 수용 부채로 둔다(PLAN §9-11). ⚠️ `src/hud/review.ts`의 `createReviewSubmitter`가 없는 라우트(`/api/tasks/{id}/review`)를 호출하고 있다 → **VOX-38**(백로그, high). Phase 3 체크포인트가 "거절 후 재작업 승인"을 요구하므로 VOX-27 착수 전에 처리 여부를 결정해야 한다.
 - **`acpx_session_init_failed`는 증상이지 원인이 아니다** (2026-07-27). "Claude ACP session creation timed out"으로 이슈가 `blocked`이 되지만, 사원 레코드의 `errorReason`을 보면 실제 사유는 `You've hit your session limit · resets <시각>`인 경우가 있다. 어댑터를 직접 stdio로 때려 `session/new`가 정상 응답하면(실측 2.5초) CLI·어댑터는 무고하고 **한도 리셋만 기다리면 된다**. `GET /api/agents/{id}` → `status`/`errorReason` 를 먼저 볼 것. 리셋 후에는 이슈를 `todo`로 되돌리고 재배정하면 즉시 재가동된다(`errorReason` 문자열은 잔여물이라 남아 있어도 무방).
