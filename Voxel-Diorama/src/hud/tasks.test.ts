@@ -16,6 +16,7 @@ const existing: Task = {
   priority: "high",
   completedAt: "2026-07-27T01:00:00.000Z",
   approved: null,
+  ruinHistory: null,
 };
 
 async function listUsesTheCompanyProxyAndParsesTasks() {
@@ -29,10 +30,13 @@ async function listUsesTheCompanyProxyAndParsesTasks() {
   assert.deepEqual(tasks, [existing]);
 }
 
-async function listCarriesApprovalEvidenceForDoneTasksUnderTheActiveTrip() {
+async function listCarriesApprovalEvidenceForEveryDirectChildOfTheActiveTrip() {
+  // VOX-26: a rejected task's ruin must stay visible even while its current status is
+  // no longer `done` (it may be back in todo/in_progress being reworked), so approval
+  // history is fetched for every direct child of the trip root, not only `done` ones.
   const directApproved = { ...existing, id: "approved" };
   const directUnapproved = { ...existing, id: "unapproved" };
-  const pending = { ...existing, id: "pending", status: "in_review", completedAt: null };
+  const reworking = { ...existing, id: "reworking", status: "todo", completedAt: null };
   const grandchild = { ...existing, id: "grandchild", parentId: "approved" };
   const requests: string[] = [];
 
@@ -40,31 +44,87 @@ async function listCarriesApprovalEvidenceForDoneTasksUnderTheActiveTrip() {
     const path = String(input);
     requests.push(path);
     if (path.endsWith("/issues")) {
-      return Response.json([directApproved, directUnapproved, pending, grandchild]);
+      return Response.json([directApproved, directUnapproved, reworking, grandchild]);
     }
     if (path === "/api/issues/approved/approvals") {
-      return Response.json([{ id: "approval-1", status: "approved", createdAt: "2026-07-27T01:00:00.000Z" }]);
+      return Response.json([
+        { id: "approval-1", status: "approved", decisionNote: null, createdAt: "2026-07-27T01:00:00.000Z" },
+      ]);
     }
     if (path === "/api/issues/unapproved/approvals") {
-      return Response.json([{ id: "approval-2", status: "rejected", createdAt: "2026-07-27T01:00:00.000Z" }]);
+      return Response.json([
+        {
+          id: "approval-2",
+          status: "rejected",
+          decisionNote: "카메라 각도가 D15 위반",
+          createdAt: "2026-07-27T01:00:00.000Z",
+        },
+      ]);
+    }
+    if (path === "/api/issues/reworking/approvals") {
+      return Response.json([]);
     }
     return Response.json({ message: "unexpected path" }, { status: 404 });
   }, "company-1", "trip-root");
 
   assert.deepEqual(
-    tasks.map(({ id, approved }) => ({ id, approved })),
+    tasks.map(({ id, approved, ruinHistory }) => ({ id, approved, ruinHistory })),
     [
-      { id: "approved", approved: true },
-      { id: "unapproved", approved: false },
-      { id: "pending", approved: null },
-      { id: "grandchild", approved: null },
+      { id: "approved", approved: true, ruinHistory: { attemptNumber: 1, ruins: [] } },
+      {
+        id: "unapproved",
+        approved: false,
+        ruinHistory: {
+          attemptNumber: 2,
+          ruins: [
+            {
+              approvalId: "approval-2",
+              attemptNumber: 1,
+              decisionNote: "카메라 각도가 D15 위반",
+              createdAt: "2026-07-27T01:00:00.000Z",
+            },
+          ],
+        },
+      },
+      { id: "reworking", approved: false, ruinHistory: { attemptNumber: 1, ruins: [] } },
+      { id: "grandchild", approved: null, ruinHistory: null },
     ],
   );
   assert.deepEqual(requests, [
     "/api/companies/company-1/issues",
     "/api/issues/approved/approvals",
     "/api/issues/unapproved/approvals",
+    "/api/issues/reworking/approvals",
   ]);
+}
+
+async function rejectedAttemptNumbersFollowDecisionOrderNotResponseOrder() {
+  // C1: attemptNumber = 1 + count of `rejected` records; revision_requested/cancelled/
+  // pending never increment it, and the ruin list is ordered by when the rejection
+  // happened, not by array position in the API response (shuffled below).
+  const task = { ...existing, id: "reworked-twice" };
+
+  const tasks = await listTasks(async (input) => {
+    const path = String(input);
+    if (path.endsWith("/issues")) return Response.json([task]);
+    if (path === "/api/issues/reworked-twice/approvals") {
+      return Response.json([
+        { id: "rr", status: "revision_requested", decisionNote: "사소한 수정", createdAt: "2026-07-27T05:00:00.000Z" },
+        { id: "second-reject", status: "rejected", decisionNote: "두번째 반려", createdAt: "2026-07-27T03:00:00.000Z" },
+        { id: "cancel", status: "cancelled", decisionNote: null, createdAt: "2026-07-27T04:00:00.000Z" },
+        { id: "first-reject", status: "rejected", decisionNote: "첫번째 반려", createdAt: "2026-07-27T01:00:00.000Z" },
+      ]);
+    }
+    return Response.json({ message: "unexpected path" }, { status: 404 });
+  }, "company-1", "trip-root");
+
+  assert.deepEqual(tasks[0]?.ruinHistory, {
+    attemptNumber: 3,
+    ruins: [
+      { approvalId: "first-reject", attemptNumber: 1, decisionNote: "첫번째 반려", createdAt: "2026-07-27T01:00:00.000Z" },
+      { approvalId: "second-reject", attemptNumber: 2, decisionNote: "두번째 반려", createdAt: "2026-07-27T03:00:00.000Z" },
+    ],
+  });
 }
 
 async function onlyTheLatestApprovalDecisionKeepsABuilding() {
@@ -79,14 +139,14 @@ async function onlyTheLatestApprovalDecisionKeepsABuilding() {
     if (path.endsWith("/issues")) return Response.json([withdrawn, reApproved]);
     if (path === "/api/issues/withdrawn/approvals") {
       return Response.json([
-        { id: "w-new", status: "cancelled", createdAt: "2026-07-27T02:00:00.000Z" },
-        { id: "w-old", status: "approved", createdAt: "2026-07-27T01:00:00.000Z" },
+        { id: "w-new", status: "cancelled", decisionNote: null, createdAt: "2026-07-27T02:00:00.000Z" },
+        { id: "w-old", status: "approved", decisionNote: null, createdAt: "2026-07-27T01:00:00.000Z" },
       ]);
     }
     if (path === "/api/issues/re-approved/approvals") {
       return Response.json([
-        { id: "r-old", status: "rejected", createdAt: "2026-07-27T01:00:00.000Z" },
-        { id: "r-new", status: "approved", createdAt: "2026-07-27T02:00:00.000Z" },
+        { id: "r-old", status: "rejected", decisionNote: "초기 반려", createdAt: "2026-07-27T01:00:00.000Z" },
+        { id: "r-new", status: "approved", decisionNote: null, createdAt: "2026-07-27T02:00:00.000Z" },
       ]);
     }
     return Response.json({ message: "unexpected path" }, { status: 404 });
@@ -172,6 +232,7 @@ async function validDraftSendsOneRequestAndReturnsTheCreatedTask() {
     priority: "medium",
     completedAt: null,
     approved: null,
+    ruinHistory: null,
   };
   const submitter = createTaskSubmitter(async (_input, init) => {
     requests += 1;
@@ -267,7 +328,8 @@ function mergeKeepsARepeatedSuccessToOneVisibleTask() {
 }
 
 await listUsesTheCompanyProxyAndParsesTasks();
-await listCarriesApprovalEvidenceForDoneTasksUnderTheActiveTrip();
+await listCarriesApprovalEvidenceForEveryDirectChildOfTheActiveTrip();
+await rejectedAttemptNumbersFollowDecisionOrderNotResponseOrder();
 await onlyTheLatestApprovalDecisionKeepsABuilding();
 await approvalListRejectsRecordsMissingACreatedAt();
 await listRejectsTasksWithoutAParentField();

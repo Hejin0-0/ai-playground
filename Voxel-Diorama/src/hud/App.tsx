@@ -6,6 +6,7 @@ import { Selector, type SelectorOptionData } from "@astryxdesign/core/Selector";
 import { Skeleton } from "@astryxdesign/core/Skeleton";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { projectIsland, totalScore } from "../island/buildings.ts";
 import { Island } from "../island/Island.tsx";
 import { useActiveTrip } from "../state/useActiveTrip.ts";
 import { ReviewPanel } from "./ReviewPanel.tsx";
@@ -175,6 +176,20 @@ export function TaskList({
   );
 }
 
+// D10: "섬별 + 평생 누적" score display. Phase 4's trip archive (TripArchive) doesn't
+// exist yet and only one trip is ever active (§3.5), so there is nothing archived to
+// add — lifetime score is derived the same way as the island score (totalScore over
+// buildings only, VOX-26 §0: no separate persistence) and will pick up prior trips'
+// totals once Phase 4 adds an archive to read from.
+export function LifetimeScore({ score }: { score: number }) {
+  return (
+    <div className="lifetime-score" role="status" aria-live="polite">
+      <span>평생 누적 점수</span>
+      <strong>{score}점</strong>
+    </div>
+  );
+}
+
 export function App({ companyId }: { companyId: string }) {
   const [listState, setListState] = useState<TaskListState>({ kind: "loading" });
   const [draft, setDraft] = useState<TaskDraft>({ title: "", priority: "" });
@@ -279,6 +294,11 @@ export function App({ companyId }: { companyId: string }) {
   const selectedTask =
     listState.kind === "ready" ? listState.tasks.find((task) => task.id === selectedTaskId) : undefined;
 
+  const lifetimeScore =
+    activeTrip && listState.kind === "ready"
+      ? totalScore(projectIsland(listState.tasks, activeTrip.rootIssueId).buildings)
+      : 0;
+
   return (
     <AppShell
       variant="surface"
@@ -302,6 +322,7 @@ export function App({ companyId }: { companyId: string }) {
             <h1>업무 운영</h1>
             <p>Paperclip의 실제 업무를 확인하고 결과물 업무를 발주·검수합니다.</p>
           </div>
+          <LifetimeScore score={lifetimeScore} />
           <Button label="목록 새로고침" variant="ghost" onClick={() => void load()} />
         </header>
 

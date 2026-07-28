@@ -224,4 +224,132 @@ assert.equal(
   "separate app processes must calculate byte-identical placements",
 );
 
+// VOX-26 §3.4 rules 3/6, D9: ruin preservation + rework re-plotting + score exclusion.
+const reworkTasks = [
+  ...tasks,
+  {
+    // Rejected twice, then approved on the third submission: one live building plus
+    // two permanent ruins must coexist for the same issue (C1, C2).
+    id: "reworked",
+    parentId: "trip-root",
+    status: "done",
+    priority: "high",
+    completedAt: "2026-07-27T05:00:00.000Z",
+    approved: true,
+    ruinHistory: {
+      attemptNumber: 3,
+      ruins: [
+        { approvalId: "appr-r1", attemptNumber: 1, decisionNote: "1차 반려", createdAt: "2026-07-27T01:30:00.000Z" },
+        { approvalId: "appr-r2", attemptNumber: 2, decisionNote: "2차 반려", createdAt: "2026-07-27T03:15:00.000Z" },
+      ],
+    },
+  },
+  {
+    // C6: cancelled after one rejection — the progress marker goes away but the ruin
+    // from the earlier rejection must not.
+    id: "abandoned",
+    parentId: "trip-root",
+    status: "cancelled",
+    priority: "medium",
+    completedAt: null,
+    approved: false,
+    ruinHistory: {
+      attemptNumber: 2,
+      ruins: [{ approvalId: "appr-a1", attemptNumber: 1, decisionNote: "포기", createdAt: "2026-07-27T02:30:00.000Z" }],
+    },
+  },
+  {
+    // Rejected once, currently back in `todo` for rework — not `done`, so its ruin must
+    // still show up purely from approval history (C2's "server is the source" premise).
+    id: "midrework",
+    parentId: "trip-root",
+    status: "todo",
+    priority: "low",
+    completedAt: null,
+    approved: false,
+    ruinHistory: {
+      attemptNumber: 2,
+      ruins: [{ approvalId: "appr-m1", attemptNumber: 1, decisionNote: "수정 요망", createdAt: "2026-07-27T04:15:00.000Z" }],
+    },
+  },
+  {
+    // C7: latest decision is revision_requested with no prior rejection — no ruin, no
+    // plot, the open attempt just stays at 1.
+    id: "open-revision",
+    parentId: "trip-root",
+    status: "in_review",
+    priority: "critical",
+    completedAt: null,
+    approved: false,
+    ruinHistory: { attemptNumber: 1, ruins: [] },
+  },
+] as const;
+
+const reworkProjection = projectIsland(reworkTasks, "trip-root");
+
+assert.deepEqual(
+  reworkProjection.buildings.map(({ issueId, attemptNumber, score }) => ({ issueId, attemptNumber, score })),
+  [
+    { issueId: "issue-b", attemptNumber: 1, score: 60 },
+    { issueId: "issue-a", attemptNumber: 1, score: 15 },
+    { issueId: "reworked", attemptNumber: 3, score: 45 },
+  ],
+  "C1: attemptNumber = 1 + rejected-record count, not a hardcoded 1",
+);
+
+assert.deepEqual(
+  reworkProjection.ruins.map(({ issueId, attemptNumber, decisionNote }) => ({ issueId, attemptNumber, decisionNote })),
+  [
+    { issueId: "reworked", attemptNumber: 1, decisionNote: "1차 반려" },
+    { issueId: "abandoned", attemptNumber: 1, decisionNote: "포기" },
+    { issueId: "reworked", attemptNumber: 2, decisionNote: "2차 반려" },
+    { issueId: "midrework", attemptNumber: 1, decisionNote: "수정 요망" },
+  ],
+  "C2/C6/C7: one ruin per rejected record regardless of current status, ordered by rejection time; revision_requested alone makes none",
+);
+
+assert.ok(
+  reworkProjection.ruins.every((ruin) => !("score" in ruin)),
+  "C4: ruins carry no score field at all",
+);
+assert.equal(
+  totalScore(reworkProjection.buildings),
+  60 + 15 + 45,
+  "C4: only buildings contribute to score — ruins and non-done rework stay at 0",
+);
+
+const reworkPlotKeys = [
+  ...reworkProjection.buildings.map(({ plot }) => `${plot.x},${plot.z}`),
+  ...reworkProjection.adjustments.map(({ plot }) => `${plot.x},${plot.z}`),
+  ...reworkProjection.ruins.map(({ plot }) => `${plot.x},${plot.z}`),
+];
+assert.equal(
+  new Set(reworkPlotKeys).size,
+  reworkPlotKeys.length,
+  "C3: buildings, adjustments and ruins never share a plot",
+);
+
+const reworkedBuildingPlot = reworkProjection.buildings.find((building) => building.issueId === "reworked")?.plot;
+assert.ok(
+  reworkProjection.ruins
+    .filter((ruin) => ruin.issueId === "reworked")
+    .every((ruin) => !(ruin.plot.x === reworkedBuildingPlot?.x && ruin.plot.z === reworkedBuildingPlot?.z)),
+  "C3: a reworked, now-approved building must not reuse its own earlier ruin's plot",
+);
+
+const reworkModuleScript = [
+  `import { projectIsland } from ${JSON.stringify(moduleUrl)};`,
+  `console.log(JSON.stringify(projectIsland(${JSON.stringify(reworkTasks)}, "trip-root")));`,
+].join("\n");
+const projectReworkInFreshProcess = () =>
+  execFileSync(process.execPath, ["--input-type=module", "--eval", reworkModuleScript], {
+    encoding: "utf8",
+  }).trim();
+
+assert.equal(
+  projectReworkInFreshProcess(),
+  projectReworkInFreshProcess(),
+  "C5: repeated polling/app restarts must reproduce identical ruins, buildings and plots",
+);
+
 console.log("buildings.test.ts: all checks passed");

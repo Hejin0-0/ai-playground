@@ -151,6 +151,33 @@
     white-space: nowrap;
   }
 
+  .lifetime-score {
+    display: grid;
+    gap: 2px;
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-element);
+    background: var(--color-background-surface);
+  }
+
+  .lifetime-score span {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+  }
+
+  .lifetime-score strong {
+    font-size: 1.25rem;
+  }
+
+  .ruin-label {
+    padding: 2px 5px;
+    color: #f2e6dd;
+    background: #5c4033;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
   .create-form,
   .state-panel {
     display: grid;

@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { IslandScore } from "../island/Island.tsx";
-import { markListStale, TaskList, type TaskListState } from "./App.tsx";
+import { LifetimeScore, markListStale, TaskList, type TaskListState } from "./App.tsx";
 import { createTaskListCommitGate, listTasks, type Task } from "./tasks.ts";
 
 const task: Task = {
@@ -17,6 +17,7 @@ const task: Task = {
   priority: "medium",
   completedAt: null,
   approved: null,
+  ruinHistory: null,
 };
 
 function loadingIsAnnounced() {
@@ -92,6 +93,25 @@ function islandScoreShowsTheD10Sum() {
   assert.match(html, /섬 점수/);
   assert.match(html, /75점/);
   assert.match(html, /2동/);
+}
+
+function lifetimeScoreShowsTheD10CumulativeTotal() {
+  const html = renderToStaticMarkup(<LifetimeScore score={135} />);
+  assert.match(html, /평생 누적 점수/);
+  assert.match(html, /135점/);
+}
+
+// C4: the lifetime stat must be derived from totalScore(buildings) — never a separately
+// stored/incremented counter — so it structurally cannot count ruins or drift from the
+// island score's own derivation (VOX-26 §0: no worldStateStore persistence here).
+async function lifetimeScoreIsWiredFromTotalScoreOverBuildingsOnly() {
+  const source = await fs.readFile(path.resolve(process.cwd(), "src/hud/App.tsx"), "utf8");
+  assert.match(
+    source,
+    /totalScore\(projectIsland\([^)]*\)\.buildings\)/,
+    "App.tsx: lifetime score must come from totalScore(...).buildings, not a stored counter",
+  );
+  assert.match(source, /<LifetimeScore score=\{lifetimeScore\}/, "App.tsx must render the lifetime score stat (D10)");
 }
 
 // Verifies the seam: App.tsx's background-poll failure branch must contain
@@ -214,9 +234,11 @@ markListStaleTransitionReadyToStale();
 staleListWarnsThatLiveUpdatesStopped();
 freshListHasNoStaleWarning();
 islandScoreShowsTheD10Sum();
+lifetimeScoreShowsTheD10CumulativeTotal();
 
 // --- run async tests ---
 pollingSeamWiredInAppCatch()
+  .then(() => lifetimeScoreIsWiredFromTotalScoreOverBuildingsOnly())
   .then(() => pollingFailureMarksStaleThenRecovers())
   .then(() => console.log("App.test.tsx: all checks passed"))
   .catch((e) => {

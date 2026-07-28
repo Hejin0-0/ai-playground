@@ -14,6 +14,21 @@ export const TASK_STATUSES = [
 export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
+// One ruin per permanently-rejected approval record (VOX-26 / D9). attemptNumber is
+// this rejection's 1-based position among the issue's rejections, in decision order —
+// the live/open attempt (building or in-progress work) is 1 + ruins.length.
+export interface TaskRuin {
+  approvalId: string;
+  attemptNumber: number;
+  decisionNote: string | null;
+  createdAt: string;
+}
+
+export interface TaskRuinHistory {
+  attemptNumber: number;
+  ruins: TaskRuin[];
+}
+
 export interface TaskProjection {
   id: string;
   parentId: string | null;
@@ -23,6 +38,7 @@ export interface TaskProjection {
   priority: TaskPriority | null;
   completedAt: string | null;
   approved: boolean | null;
+  ruinHistory: TaskRuinHistory | null;
 }
 
 export type Task = TaskProjection;
@@ -67,6 +83,7 @@ function parseTask(value: unknown): Task {
     priority: task.priority as TaskPriority | null,
     completedAt: task.completedAt,
     approved: null,
+    ruinHistory: null,
   };
 }
 
@@ -82,30 +99,68 @@ async function expectJson(response: Response): Promise<unknown> {
   return data;
 }
 
-async function hasApprovedReview(fetcher: Fetcher, issueId: string): Promise<boolean> {
+interface ApprovalOutcome {
+  approved: boolean;
+  ruinHistory: TaskRuinHistory;
+}
+
+// VOX-26: the approvals list is the only source of attempt history (PAPERCLIP-RECON.md
+// confirms rejected/revision_requested records are preserved forever) — do not add a
+// second fetch here, pull both the "is it currently approved" flag and the permanent
+// ruin list out of this one response.
+async function fetchApprovalOutcome(fetcher: Fetcher, issueId: string): Promise<ApprovalOutcome> {
   const data = await expectJson(await fetcher(`/api/issues/${encodeURIComponent(issueId)}/approvals`));
   if (!Array.isArray(data)) throw new Error("Paperclip 승인 목록 형식이 올바르지 않습니다.");
-  // Only the most recent decision counts: a withdrawn/cancelled approval must not
-  // leave a stale earlier "approved" record standing (D4 is a human-only gate).
-  let latest: { status: ApprovalStatus; at: number; id: string } | undefined;
+  const parsed: Array<{ id: string; status: ApprovalStatus; decisionNote: string | null; at: number; createdAt: string }> = [];
   for (const value of data) {
     if (
       !value ||
       typeof value !== "object" ||
       !APPROVAL_STATUSES.includes((value as { status?: unknown }).status as ApprovalStatus) ||
-      typeof (value as { createdAt?: unknown }).createdAt !== "string"
+      typeof (value as { createdAt?: unknown }).createdAt !== "string" ||
+      !(
+        (value as { decisionNote?: unknown }).decisionNote === null ||
+        typeof (value as { decisionNote?: unknown }).decisionNote === "string"
+      )
     ) {
       throw new Error("Paperclip 승인 응답 형식이 올바르지 않습니다.");
     }
-    const approval = value as { status: ApprovalStatus; createdAt: string; id?: unknown };
-    const parsed = Date.parse(approval.createdAt);
-    const at = Number.isNaN(parsed) ? -Infinity : parsed;
-    const id = typeof approval.id === "string" ? approval.id : "";
-    if (!latest || at > latest.at || (at === latest.at && id > latest.id)) {
-      latest = { status: approval.status, at, id };
+    const approval = value as { status: ApprovalStatus; createdAt: string; decisionNote: string | null; id?: unknown };
+    const parsedAt = Date.parse(approval.createdAt);
+    parsed.push({
+      id: typeof approval.id === "string" ? approval.id : "",
+      status: approval.status,
+      decisionNote: approval.decisionNote,
+      at: Number.isNaN(parsedAt) ? -Infinity : parsedAt,
+      createdAt: approval.createdAt,
+    });
+  }
+
+  // Only the most recent decision counts: a withdrawn/cancelled approval must not
+  // leave a stale earlier "approved" record standing (D4 is a human-only gate).
+  let latest: { status: ApprovalStatus; at: number; id: string } | undefined;
+  for (const approval of parsed) {
+    if (!latest || approval.at > latest.at || (approval.at === latest.at && approval.id > latest.id)) {
+      latest = approval;
     }
   }
-  return latest?.status === "approved";
+
+  // D9 rule 3/6: only a `rejected` record turns an attempt into a permanent ruin.
+  // `revision_requested`/`cancelled`/`pending` leave the open attempt untouched.
+  const ruins: TaskRuin[] = parsed
+    .filter((approval) => approval.status === "rejected")
+    .sort((a, b) => (a.at !== b.at ? a.at - b.at : (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)))
+    .map((approval, index) => ({
+      approvalId: approval.id,
+      attemptNumber: index + 1,
+      decisionNote: approval.decisionNote,
+      createdAt: approval.createdAt,
+    }));
+
+  return {
+    approved: latest?.status === "approved",
+    ruinHistory: { attemptNumber: ruins.length + 1, ruins },
+  };
 }
 
 export async function listTasks(
@@ -131,13 +186,16 @@ export async function listTasks(
     }
     unique.set(task.id, { task, fingerprint });
   }
-  // ponytail: one GET per completed active-trip task; batch when Paperclip exposes bulk issue approvals.
+  // ponytail: one GET per active-trip task; batch when Paperclip exposes bulk issue approvals.
+  // Scoped to every direct child, not just `done` ones: a rejected task's ruin (D9) must
+  // stay visible while it's reworked back through todo/in_progress/backlog, before it is
+  // ever `done` again.
   return Promise.all(
-    [...unique.values()].map(async ({ task }) =>
-      approvalRootIssueId && task.parentId === approvalRootIssueId && task.status === "done"
-        ? { ...task, approved: await hasApprovedReview(fetcher, task.id) }
-        : task,
-    ),
+    [...unique.values()].map(async ({ task }) => {
+      if (!approvalRootIssueId || task.parentId !== approvalRootIssueId) return task;
+      const { approved, ruinHistory } = await fetchApprovalOutcome(fetcher, task.id);
+      return { ...task, approved, ruinHistory };
+    }),
   );
 }
 

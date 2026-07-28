@@ -7,6 +7,7 @@ import {
   totalScore,
   type AdjustmentProjection,
   type BuildingProjection,
+  type RuinProjection,
 } from "./buildings.ts";
 
 // Phase 3-1 greybox: a flat isometric island rendered from grey primitives.
@@ -18,6 +19,7 @@ const GROUND = "#7d828c";
 const PLOT = "#aeb4bf";
 const BUILDING = "#5f6672";
 const ADJUSTMENT = "#c8872d";
+const RUIN = "#5c4033";
 const PLOT_GAP = 2.4;
 
 function Ground({ plotCount }: { plotCount: number }) {
@@ -106,6 +108,33 @@ function AdjustmentMarker({ marker }: { marker: AdjustmentProjection }) {
   );
 }
 
+// D9: a rejection is a permanent ruin, not a temporary marker — rendered as low, tilted
+// rubble (never as tall as a building) so it reads as collapsed rather than in-progress.
+function Ruin({ ruin }: { ruin: RuinProjection }) {
+  return (
+    <group
+      name={`ruin-${ruin.issueId}-${ruin.attemptNumber}`}
+      position={[ruin.plot.x * PLOT_GAP, 0.4, ruin.plot.z * PLOT_GAP]}
+    >
+      <mesh position={[-0.25, 0.15, 0.1]} rotation={[0.1, 0.3, 0.35]}>
+        <boxGeometry args={[0.6, 0.3, 0.6]} />
+        <meshStandardMaterial color={RUIN} />
+      </mesh>
+      <mesh position={[0.3, 0.1, -0.15]} rotation={[-0.15, -0.2, 0.2]}>
+        <boxGeometry args={[0.45, 0.2, 0.45]} />
+        <meshStandardMaterial color={RUIN} />
+      </mesh>
+      <mesh position={[0, 0.35, 0]} rotation={[0.4, 0.1, -0.3]}>
+        <boxGeometry args={[0.8, 0.15, 0.3]} />
+        <meshStandardMaterial color={RUIN} />
+      </mesh>
+      <Html center position={[0, 0.9, 0]}>
+        <span className="ruin-label">[폐허 · 시도 {ruin.attemptNumber}]</span>
+      </Html>
+    </group>
+  );
+}
+
 export function IslandScore({ score, buildingCount }: { score: number; buildingCount: number }) {
   return (
     <div className="island-score" role="status" aria-live="polite">
@@ -125,9 +154,9 @@ export function Island({
 }) {
   const projection = activeTrip
     ? projectIsland(tasks, activeTrip.rootIssueId)
-    : { buildings: [], adjustments: [] };
-  const { buildings, adjustments } = projection;
-  const radius = [...buildings, ...adjustments].reduce(
+    : { buildings: [], adjustments: [], ruins: [] };
+  const { buildings, adjustments, ruins } = projection;
+  const radius = [...buildings, ...adjustments, ...ruins].reduce(
     (largest, item) => Math.max(largest, Math.abs(item.plot.x), Math.abs(item.plot.z)),
     2,
   );
@@ -152,6 +181,9 @@ export function Island({
             ))}
             {adjustments.map((marker) => (
               <AdjustmentMarker key={marker.issueId} marker={marker} />
+            ))}
+            {ruins.map((ruin) => (
+              <Ruin key={`${ruin.issueId}:${ruin.attemptNumber}`} ruin={ruin} />
             ))}
           </>
         )}

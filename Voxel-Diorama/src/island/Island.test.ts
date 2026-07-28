@@ -21,4 +21,7 @@ assert.match(app, /isDisabled=\{isSubmitting \|\| !activeTrip\}/, "task creation
 assert.match(source, /AdjustmentMarker/, "done tasks needing reconciliation must render a marker");
 assert.match(source, /\[조정 필요\]/, "the reconciliation marker must carry the PLAN label");
 
+assert.match(source, /ruins\.map/, "VOX-26: every projected ruin must be rendered, not just buildings/adjustments");
+assert.match(source, /\[폐허 · 시도 \{ruin\.attemptNumber\}\]/, "a ruin must show its own attempt number (D9)");
+
 console.log("Island.test.ts: all checks passed");
