@@ -1,3 +1,7 @@
+// PLAN §4.7 (v0.2+ 이전 예정): Svelte + 순수 Three.js로 옮길 때 이 파일에서
+// 갈아끼울 것은 아래 셋뿐이다 — Canvas(렌더러+resize), OrbitControls
+// (three/examples에 동일물), Html(three 내장 CSS2DRenderer). 나머지 JSX는
+// three 원시 객체라 그대로 옮겨간다. 새 의존성 없이 R3F 2패키지가 빠진다.
 import { Html, OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import type { Task } from "../hud/tasks.ts";

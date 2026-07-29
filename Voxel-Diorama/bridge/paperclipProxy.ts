@@ -1,3 +1,8 @@
+// PLAN §4.7 (v0.2+ 이전 예정): 이 모듈은 vite Plugin이라 `vite dev`의 수명에
+// 묶여 있다 — Rust/Axum 독립 프로세스로 빠지면 WebSocket·지형 생성·상시
+// 영속화가 들어갈 자리가 생긴다. 이전의 이음매는 §4.2의 HTTP 라우트 계약이고,
+// reviewProxy.e2e.test.ts의 C1~C6이 그 계약의 행동 명세라 포팅 인수 시험으로
+// 재사용된다. 라우트 형태를 바꿀 때는 그 테스트를 함께 옮길 것.
 import http from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { TLSSocket } from "node:tls";

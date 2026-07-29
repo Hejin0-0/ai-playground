@@ -259,6 +259,40 @@ Voxel-Diorama/
     themes/jp-kyoto/           # 교토 테마 신규 제작 GLB
 ```
 
+### 4.7 스택 이전 예정 (v0.2+) — 방향 기록
+
+> ⚠️ **지금 바꾸지 않는다.** v0.1(Phase 3~5)은 §4.1~4.6의 현 스택으로 완주한다. 이 절은 "추후 이렇게 바뀔 수 있다"의 기록이며, 착수 시점은 미정이다. 아래 §4.1의 "WebSocket 없음"·§4.2의 "Vite 서버 미들웨어"·§4.3의 5초 폴링은 이전이 실제로 시작될 때 함께 개정된다.
+
+| 층 | 이전 후 |
+|---|---|
+| Client | Svelte + TypeScript · Three.js(WebGPU + WebGL) · Vite |
+| Agent Client | Rust · Tokio + tokio-tungstenite(WebSocket) · Axum(로컬 관전 패널) |
+| Server | Rust · Tokio · tokio-tungstenite(WebSocket) · Axum(Terrain REST API) · serde |
+
+**Client — 우리가 얻는 것**
+
+- **R3F 의존이 얕아 제거 비용이 낮다.** `src/island/Island.tsx`의 R3F/drei 접점은 `Canvas`·`OrbitControls`·`Html` 셋뿐이고, 나머지 JSX는 three 원시 객체(`mesh`/`boxGeometry`/`meshStandardMaterial`)의 문법 설탕이다. `OrbitControls`는 `three/examples`에 있고, `Html`은 three 내장 `CSS2DRenderer`로 대체된다 — **새 의존성 0으로 `@react-three/fiber` + `@react-three/drei` 두 패키지를 덜어낸다.**
+- **테마 파이프라인이 그대로 살아남는다.** Astryx의 `astryx.css`/`theme.css`는 CSS 커스텀 프로퍼티 기반이라 **토큰 층이 프레임워크 독립**이다. §5의 Zero-Leak 4단계 전환 ③(UI 토큰 CSS 주입)은 프레임워크가 바뀌어도 동작한다. 이전 시 **토큰 층을 먼저 분리해 두면** 테마 자산이 이전 비용에서 빠진다.
+- **`InstancedMesh` 전환의 자연스러운 시점.** 현재 건물이 개별 `<mesh>`라 섬이 차면 드로우콜이 선형으로 는다. §5가 이미 `InstancedMesh` 로드를 전제하므로 이전이 이 정합을 회수한다. D8이 건물 종류를 해시로 고르므로 **종류별 인스턴스 버킷** 구조가 된다.
+- **`WebGPURenderer` 단일 경로로 커버리지 둘.** TSL 노드 머티리얼로 쓰면 WebGL2 폴백을 렌더러가 자동 처리한다 — 경로를 두 벌 유지하지 않고 두 백엔드를 얻는다.
+
+**Server — 우리가 얻는 것**
+
+- **독립 프로세스를 처음으로 갖는다.** 현재 `paperclipProxy()`·`tripsApi()`의 반환 타입은 vite `Plugin`이다(§4.2 제목 그대로). API 계층이 `vite dev`의 수명에 묶여 있어, **WebSocket·지형 생성·상시 영속화가 들어갈 자리가 지금은 없다.** Axum으로 빠지면 이 셋이 동시에 열리고, 앱이 개발 서버 없이 실행 가능해진다.
+- **공유 상태 동시성이 구조로 보장된다.** Tokio + Axum의 `Arc<Mutex>`/actor 패턴은 검수 결정이 겹칠 때의 상태 경쟁을 컴파일러가 의식하게 만든다 — VOX-38 적대 검수가 지목한 결함 부류가 여기 해당한다.
+- **계약의 단일 출처.** `serde` 구조체에서 `ts-rs`로 TS 타입을 생성하면 §4.5의 데이터 타입 7종이 한 곳에서만 정의된다. 스키마 언어를 새로 도입하지 않는 가장 싼 방법이고, D2("원본 중복 금지")를 두 언어 사이에서도 유지한다. 이때 `src/schema/`(Zod)의 역할은 "외부 입력 검증"으로 좁아진다.
+- **WS 푸시로 §4.3 폴링을 대체할 수 있다.** 5초 간격 폴링과 "쓰기 직후 즉시 재조회"가 서버 푸시 한 경로로 합쳐진다.
+- **§4.2의 6개 라우트가 이음매다.** 이 HTTP 계약이 고정돼 있는 한 클라이언트와 서버를 **독립적으로** 옮길 수 있다. `bridge/reviewProxy.e2e.test.ts`의 C1~C6은 이미 그 계약의 행동 명세이므로, 언어 중립 HTTP 테스트로 다듬어 두면 **Rust 포팅의 인수 시험으로 그대로 재사용된다.**
+
+**Agent Client — 우리가 얻는 것**
+
+- **에이전트 실행을 실시간으로 본다.** 현재는 Paperclip REST 폴링이라 "지금 무엇을 하는 중인지"가 없다. WS 스트림은 §1 제품 비전("AI 사원이 일하는 것을 지켜본다")에 직결되는 유일한 미충족 조각이다.
+- **관전 패널이 에이전트 프로세스와 수명을 공유한다.** 게임을 띄우지 않아도 실행 로그를 볼 수 있다.
+
+> 🚨 **착수 전 선행 확정 1건**: Agent Client가 Paperclip을 **대체**하는가, 병행하는가. 현재 D4(에이전트 자가승인 금지)·Lean B(에이전트 간 배정 금지)를 강제하는 주체는 우리 코드가 아니라 Paperclip의 API 표면이다. 대체라면 그 강제가 우리 프로토콜로 넘어오므로 §9-11(승인 출처 위조)이 백로그가 아니라 선행 조건이 된다. **이 답이 나온 뒤에 Agent Client 코드를 시작한다.**
+
+**이전 순서**: 서버 → 클라이언트. 서버 쪽에 명분(프로세스 부재·지형·WS·동시성)이 몰려 있고, 클라이언트를 먼저 옮기면 서버 계약이 바뀔 때 HUD를 두 번 쓴다.
+
 ## 5. 테마·에셋 정책
 
 - **라이선스**: Kenney 에셋은 CC0(상업 이용 가능·출처 표기 불요)이며 원본 팩에서 직접 받는다. Kenney 로고는 사용하지 않는다. task-arcade·Tiny World Builder는 규칙·경험 참고만(코드·파일 복사 금지). 모든 출처는 `THIRD_PARTY.md`/`ASSETS.md`에 기록.

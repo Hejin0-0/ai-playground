@@ -1,3 +1,6 @@
+// PLAN §4.7 (v0.2+ 이전 예정): HUD가 Svelte로 가더라도 Astryx의 CSS 커스텀
+// 프로퍼티 토큰(astryx.css / theme.css)은 프레임워크 독립이라 §5 테마 전환
+// 파이프라인 ③(UI 토큰 주입)은 그대로 산다. 이전 시 토큰 층을 먼저 분리한다.
 import { AppShell } from "@astryxdesign/core/AppShell";
 import { Badge, type BadgeVariant } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";

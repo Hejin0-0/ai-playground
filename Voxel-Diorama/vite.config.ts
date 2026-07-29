@@ -1,3 +1,6 @@
+// PLAN §4.7 (v0.2+ 이전 예정): 아래 plugins 배열이 현재 우리의 API 계층 전부다.
+// Rust/Axum 서버로 이전하면 이 파일은 순수 프론트엔드 설정만 남고, 여기 있는
+// 타입 계약은 serde 구조체 → ts-rs 생성 TS로 단일 출처화된다.
 import os from "node:os";
 import path from "node:path";
 import { defineConfig } from "vite";
