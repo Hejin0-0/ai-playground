@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import {
+  approvalForAttempt,
   createEvidenceSubmitter,
   createReviewSubmitter,
   loadTaskEvidence,
   mergeEvidenceComment,
   type EvidenceComment,
 } from "./review.ts";
+import type { Task } from "./tasks.ts";
 
 function json(value: unknown, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -186,8 +188,32 @@ async function reviewRejectRequiresReasonAndRetriesWithOneKey() {
   });
 }
 
+function historicalRuinUsesTheApprovalForThatAttempt() {
+  const task: Task = {
+    id: "reworked",
+    parentId: "trip-root",
+    identifier: "VOX-27",
+    title: "클릭 카드",
+    status: "done",
+    priority: "medium",
+    completedAt: "2026-07-29T02:00:00.000Z",
+    approved: true,
+    ruinHistory: {
+      attemptNumber: 2,
+      ruins: [{ approvalId: "reject-1", attemptNumber: 1, decisionNote: "첫 시도 반려", createdAt: "2026-07-29T01:00:00.000Z" }],
+    },
+  };
+  const approvals = [
+    { id: "approve-2", type: "request_board_approval", status: "approved" as const, decisionNote: null, createdAt: "2026-07-29T02:00:00.000Z" },
+    { id: "reject-1", type: "request_board_approval", status: "rejected" as const, decisionNote: "첫 시도 반려", createdAt: "2026-07-29T01:00:00.000Z" },
+  ];
+  assert.equal(approvalForAttempt(task, 1, approvals)?.id, "reject-1", "C2: ruin 1 must not show the later approval");
+  assert.equal(approvalForAttempt(task, 2, approvals)?.id, "approve-2", "the current attempt uses its latest approval record");
+}
+
 await evidenceAndMetadataLoadTogether();
 await emptyEvidenceIsDistinctFromLoadFailure();
 await evidenceSubmissionIsSingleAndRetrySafe();
 await reviewRejectRequiresReasonAndRetriesWithOneKey();
+historicalRuinUsesTheApprovalForThatAttempt();
 console.log("review.test.ts: all checks passed");

@@ -30,6 +30,11 @@ async function listUsesTheCompanyProxyAndParsesTasks() {
   assert.deepEqual(tasks, [existing]);
 }
 
+async function listPreservesTheAssignedAgentForTheTaskCard() {
+  const [task] = await listTasks(async () => Response.json([{ ...existing, assigneeAgentId: "codex-dev" }]), "company-a");
+  assert.equal(task?.assigneeAgentId, "codex-dev", "C1: the existing issue projection must retain the assigned employee");
+}
+
 async function listCarriesApprovalEvidenceForEveryDirectChildOfTheActiveTrip() {
   // VOX-26: a rejected task's ruin must stay visible even while its current status is
   // no longer `done` (it may be back in todo/in_progress being reworked), so approval
@@ -328,6 +333,7 @@ function mergeKeepsARepeatedSuccessToOneVisibleTask() {
 }
 
 await listUsesTheCompanyProxyAndParsesTasks();
+await listPreservesTheAssignedAgentForTheTaskCard();
 await listCarriesApprovalEvidenceForEveryDirectChildOfTheActiveTrip();
 await rejectedAttemptNumbersFollowDecisionOrderNotResponseOrder();
 await onlyTheLatestApprovalDecisionKeepsABuilding();

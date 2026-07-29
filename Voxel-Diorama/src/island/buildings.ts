@@ -25,6 +25,7 @@ export interface BuildingProjection {
 
 export interface AdjustmentProjection {
   issueId: string;
+  attemptNumber: number;
   plot: { x: number; z: number };
 }
 
@@ -229,6 +230,7 @@ export function projectIsland(
     }),
     adjustments: adjustments.map((task) => ({
       issueId: task.id,
+      attemptNumber: task.ruinHistory?.attemptNumber ?? 1,
       plot: plots.get(`adjustment:${task.id}`)!,
     })),
     ruins: ruinSources.map((ruin) => ({

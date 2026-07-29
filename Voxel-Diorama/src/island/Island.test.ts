@@ -23,5 +23,11 @@ assert.match(source, /\[조정 필요\]/, "the reconciliation marker must carry 
 
 assert.match(source, /ruins\.map/, "VOX-26: every projected ruin must be rendered, not just buildings/adjustments");
 assert.match(source, /\[폐허 · 시도 \{ruin\.attemptNumber\}\]/, "a ruin must show its own attempt number (D9)");
+assert.match(source, /onClick=\{\(event\) => \{[\s\S]*onSelect\?\.\(\{ issueId: ruin\.issueId, attemptNumber: ruin\.attemptNumber \}\)/, "C2: a ruin click must select that exact rejected attempt");
+assert.match(source, /onClick=\{\(event\) => \{[\s\S]*onSelect\?\.\(\{ issueId: building\.issueId, attemptNumber: building\.attemptNumber \}\)/, "C1: a building click must select its live attempt");
+assert.match(source, /onClick=\{\(event\) => \{[\s\S]*onSelect\?\.\(\{ issueId: marker\.issueId, attemptNumber: marker\.attemptNumber \}\)/, "C1: an adjustment marker click must select its attempt");
+assert.match(source, /<FocusCamera selection=\{selected\} plot=\{focusPlot\} \/>/, "C3: selection must focus the island camera");
+assert.match(source, /new Vector3\(plot\.x \* PLOT_GAP, 0, plot\.z \* PLOT_GAP\)/, "C3: camera focus must use the clicked plot, not an arbitrary origin");
+assert.doesNotMatch(source, /lookAt\s*\(/, "D15: camera focus must never rotate via lookAt");
 
 console.log("Island.test.ts: all checks passed");

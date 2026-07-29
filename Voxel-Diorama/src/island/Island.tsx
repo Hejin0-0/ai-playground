@@ -3,7 +3,10 @@
 // (three/examples에 동일물), Html(three 내장 CSS2DRenderer). 나머지 JSX는
 // three 원시 객체라 그대로 옮겨간다. 새 의존성 없이 R3F 2패키지가 빠진다.
 import { Html, OrbitControls } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import { Vector3 } from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { Task } from "../hud/tasks.ts";
 import type { ActiveTrip } from "../state/useActiveTrip.ts";
 import {
@@ -13,6 +16,7 @@ import {
   type BuildingProjection,
   type RuinProjection,
 } from "./buildings.ts";
+import { translateCameraAndTarget } from "./camera.ts";
 
 // Phase 3-1 greybox: a flat isometric island rendered from grey primitives.
 // Kenney asset swap is a follow-up (PLAN §Phase 3 · D8 greybox-first).
@@ -25,6 +29,11 @@ const BUILDING = "#5f6672";
 const ADJUSTMENT = "#c8872d";
 const RUIN = "#5c4033";
 const PLOT_GAP = 2.4;
+
+export interface IslandSelection {
+  issueId: string;
+  attemptNumber: number;
+}
 
 function Ground({ plotCount }: { plotCount: number }) {
   return (
@@ -52,12 +61,25 @@ function Plots({ plotCount }: { plotCount: number }) {
   return <>{cells}</>;
 }
 
-function Building({ building }: { building: BuildingProjection }) {
+function Building({
+  building,
+  selected,
+  onSelect,
+}: {
+  building: BuildingProjection;
+  selected: boolean;
+  onSelect?: (selection: IslandSelection) => void;
+}) {
   const height = 0.8 + building.score / 45;
   return (
     <group
       name={`building-${building.issueId}`}
       position={[building.plot.x * PLOT_GAP, 0.4, building.plot.z * PLOT_GAP]}
+      scale={selected ? 1.1 : 1}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect?.({ issueId: building.issueId, attemptNumber: building.attemptNumber });
+      }}
     >
       {building.kind === "block" && (
         <mesh position={[0, height / 2, 0]}>
@@ -91,11 +113,24 @@ function Building({ building }: { building: BuildingProjection }) {
   );
 }
 
-function AdjustmentMarker({ marker }: { marker: AdjustmentProjection }) {
+function AdjustmentMarker({
+  marker,
+  selected,
+  onSelect,
+}: {
+  marker: AdjustmentProjection;
+  selected: boolean;
+  onSelect?: (selection: IslandSelection) => void;
+}) {
   return (
     <group
       name={`adjustment-${marker.issueId}`}
       position={[marker.plot.x * PLOT_GAP, 0.4, marker.plot.z * PLOT_GAP]}
+      scale={selected ? 1.1 : 1}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect?.({ issueId: marker.issueId, attemptNumber: marker.attemptNumber });
+      }}
     >
       <mesh position={[0, 0.6, 0]}>
         <boxGeometry args={[0.12, 1.2, 0.12]} />
@@ -114,11 +149,24 @@ function AdjustmentMarker({ marker }: { marker: AdjustmentProjection }) {
 
 // D9: a rejection is a permanent ruin, not a temporary marker — rendered as low, tilted
 // rubble (never as tall as a building) so it reads as collapsed rather than in-progress.
-function Ruin({ ruin }: { ruin: RuinProjection }) {
+function Ruin({
+  ruin,
+  selected,
+  onSelect,
+}: {
+  ruin: RuinProjection;
+  selected: boolean;
+  onSelect?: (selection: IslandSelection) => void;
+}) {
   return (
     <group
       name={`ruin-${ruin.issueId}-${ruin.attemptNumber}`}
       position={[ruin.plot.x * PLOT_GAP, 0.4, ruin.plot.z * PLOT_GAP]}
+      scale={selected ? 1.1 : 1}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect?.({ issueId: ruin.issueId, attemptNumber: ruin.attemptNumber });
+      }}
     >
       <mesh position={[-0.25, 0.15, 0.1]} rotation={[0.1, 0.3, 0.35]}>
         <boxGeometry args={[0.6, 0.3, 0.6]} />
@@ -139,6 +187,22 @@ function Ruin({ ruin }: { ruin: RuinProjection }) {
   );
 }
 
+function FocusCamera({ selection, plot }: { selection: IslandSelection | null; plot?: { x: number; z: number } }) {
+  const controls = useRef<OrbitControlsImpl>(null);
+  const destination = useMemo(
+    () => selection && plot && new Vector3(plot.x * PLOT_GAP, 0, plot.z * PLOT_GAP),
+    [plot, selection],
+  );
+
+  useFrame(({ camera }, delta) => {
+    if (destination && controls.current) {
+      translateCameraAndTarget(camera.position, controls.current.target, destination, Math.min(1, delta * 8));
+    }
+  });
+
+  return <OrbitControls ref={controls} enableRotate={false} enablePan={true} enableZoom={true} />;
+}
+
 export function IslandScore({ score, buildingCount }: { score: number; buildingCount: number }) {
   return (
     <div className="island-score" role="status" aria-live="polite">
@@ -152,14 +216,21 @@ export function IslandScore({ score, buildingCount }: { score: number; buildingC
 export function Island({
   activeTrip,
   tasks,
+  selected = null,
+  onSelect,
 }: {
-  activeTrip: ActiveTrip | null;
+  activeTrip: ActiveTrip | null | undefined;
   tasks: readonly Task[];
+  selected?: IslandSelection | null;
+  onSelect?: (selection: IslandSelection) => void;
 }) {
   const projection = activeTrip
     ? projectIsland(tasks, activeTrip.rootIssueId)
     : { buildings: [], adjustments: [], ruins: [] };
   const { buildings, adjustments, ruins } = projection;
+  const focusPlot = [...buildings, ...adjustments, ...ruins].find(
+    (item) => item.issueId === selected?.issueId && item.attemptNumber === selected.attemptNumber,
+  )?.plot;
   const radius = [...buildings, ...adjustments, ...ruins].reduce(
     (largest, item) => Math.max(largest, Math.abs(item.plot.x), Math.abs(item.plot.z)),
     2,
@@ -175,25 +246,45 @@ export function Island({
       >
         <ambientLight intensity={0.75} />
         <directionalLight position={[6, 12, 4]} intensity={0.9} />
-        <OrbitControls enableRotate={false} enablePan={true} enableZoom={true} />
+        <FocusCamera selection={selected} plot={focusPlot} />
         {activeTrip && (
           <>
             <Ground plotCount={plotCount} />
             <Plots plotCount={plotCount} />
             {buildings.map((building) => (
-              <Building key={building.issueId} building={building} />
+              <Building
+                key={building.issueId}
+                building={building}
+                selected={selected?.issueId === building.issueId && selected.attemptNumber === building.attemptNumber}
+                onSelect={onSelect}
+              />
             ))}
             {adjustments.map((marker) => (
-              <AdjustmentMarker key={marker.issueId} marker={marker} />
+              <AdjustmentMarker
+                key={marker.issueId}
+                marker={marker}
+                selected={selected?.issueId === marker.issueId && selected.attemptNumber === marker.attemptNumber}
+                onSelect={onSelect}
+              />
             ))}
             {ruins.map((ruin) => (
-              <Ruin key={`${ruin.issueId}:${ruin.attemptNumber}`} ruin={ruin} />
+              <Ruin
+                key={`${ruin.issueId}:${ruin.attemptNumber}`}
+                ruin={ruin}
+                selected={selected?.issueId === ruin.issueId && selected.attemptNumber === ruin.attemptNumber}
+                onSelect={onSelect}
+              />
             ))}
           </>
         )}
       </Canvas>
       {activeTrip && <IslandScore score={totalScore(buildings)} buildingCount={buildings.length} />}
-      {!activeTrip && (
+      {activeTrip === undefined && (
+        <div className="island-empty" role="status" aria-busy="true">
+          <strong>섬 검수 정보를 불러오는 중…</strong>
+        </div>
+      )}
+      {activeTrip === null && (
         <div className="island-empty" role="status">
           <strong>활성 여행이 없습니다.</strong>
           <p>여행을 시작하면 이곳에 섬이 나타납니다.</p>

@@ -14,8 +14,8 @@ export interface ActiveTrip {
 
 const POLL_MS = 5000;
 
-export function useActiveTrip(fetchImpl: typeof fetch = fetch): ActiveTrip | null {
-  const [trip, setTrip] = useState<ActiveTrip | null>(null);
+export function useActiveTrip(fetchImpl: typeof fetch = fetch): ActiveTrip | null | undefined {
+  const [trip, setTrip] = useState<ActiveTrip | null | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;

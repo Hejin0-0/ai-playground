@@ -1,3 +1,5 @@
+import type { Task } from "./tasks.ts";
+
 export interface EvidenceComment {
   id: string;
   body: string;
@@ -45,6 +47,17 @@ export interface TaskEvidence {
   runs: EvidenceRun[];
   cost: CostSummary;
   approvals: TaskApproval[];
+}
+
+// A ruin is tied to one immutable rejected approval. Never use the current/latest
+// approval when a historical plot is selected, or its card tells the wrong story.
+export function approvalForAttempt(task: Task, attemptNumber: number, approvals: TaskApproval[]) {
+  const ruin = task.ruinHistory?.ruins.find((entry) => entry.attemptNumber === attemptNumber);
+  if (ruin) return approvals.find((approval) => approval.id === ruin.approvalId);
+  return [...approvals].sort((a, b) => {
+    const time = Date.parse(b.createdAt) - Date.parse(a.createdAt);
+    return time || b.id.localeCompare(a.id);
+  })[0];
 }
 
 export type ReviewDecision = "approve" | "reject";

@@ -10,8 +10,8 @@ import { Skeleton } from "@astryxdesign/core/Skeleton";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { projectIsland, totalScore } from "../island/buildings.ts";
-import { Island } from "../island/Island.tsx";
-import { useActiveTrip } from "../state/useActiveTrip.ts";
+import { Island, type IslandSelection } from "../island/Island.tsx";
+import { useActiveTrip, type ActiveTrip } from "../state/useActiveTrip.ts";
 import { ReviewPanel } from "./ReviewPanel.tsx";
 import {
   createTaskListCommitGate,
@@ -67,12 +67,21 @@ const PRIORITY_VARIANTS: Record<TaskPriority, BadgeVariant> = {
 export type TaskListState =
   | { kind: "loading" }
   | { kind: "error"; message: string }
-  | { kind: "ready"; tasks: Task[]; stale?: boolean };
+  | { kind: "ready"; tasks: Task[]; rootIssueId?: string; stale?: boolean };
 
 // A failed background poll must surface, never freeze silently: flag the last good
 // list as stale so the operator sees the projection stopped updating.
 export function markListStale(state: TaskListState): TaskListState {
   return state.kind === "ready" && !state.stale ? { ...state, stale: true } : state;
+}
+
+// C7: a task list fetched before the active-trip root is known has no approval history.
+// It is safe for the table, but never for island markers that infer approval state.
+export function isIslandProjectionReady(
+  activeTrip: ActiveTrip | null | undefined,
+  state: TaskListState,
+) {
+  return activeTrip !== null && activeTrip !== undefined && state.kind === "ready" && state.rootIssueId === activeTrip.rootIssueId;
 }
 
 export function TaskList({
@@ -200,7 +209,7 @@ export function App({ companyId }: { companyId: string }) {
   const [submitError, setSubmitError] = useState("");
   const [createdMessage, setCreatedMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedAttempt, setSelectedAttempt] = useState<IslandSelection | null>(null);
   const activeTrip = useActiveTrip();
   const rootIssueId = activeTrip?.rootIssueId;
   const submitter = useMemo(() => createTaskSubmitter(fetch, companyId), [companyId]);
@@ -221,8 +230,8 @@ export function App({ companyId }: { companyId: string }) {
       try {
         const tasks = await listTasks(fetch, companyId, rootIssueId);
         if (shouldCommit()) {
-          setSelectedTaskId((current) => (tasks.some((task) => task.id === current) ? current : null));
-          setListState({ kind: "ready", tasks });
+          setSelectedAttempt((current) => (tasks.some((task) => task.id === current?.issueId) ? current : null));
+          setListState({ kind: "ready", tasks, rootIssueId });
         }
       } catch (error) {
         if (!shouldCommit()) return;
@@ -282,11 +291,12 @@ export function App({ companyId }: { companyId: string }) {
       setListState((current) => ({
         kind: "ready",
         tasks: mergeCreatedTask(current.kind === "ready" ? current.tasks : [], result.task),
+        rootIssueId: activeTrip.rootIssueId,
       }));
       setDraft({ title: "", priority: "" });
       setFieldErrors({});
       setCreatedMessage(`${result.task.identifier} 업무를 만들었습니다.`);
-      setSelectedTaskId(result.task.id);
+      setSelectedAttempt({ issueId: result.task.id, attemptNumber: result.task.ruinHistory?.attemptNumber ?? 1 });
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "업무 생성에 실패했습니다.");
     } finally {
@@ -295,7 +305,8 @@ export function App({ companyId }: { companyId: string }) {
   }
 
   const selectedTask =
-    listState.kind === "ready" ? listState.tasks.find((task) => task.id === selectedTaskId) : undefined;
+    listState.kind === "ready" ? listState.tasks.find((task) => task.id === selectedAttempt?.issueId) : undefined;
+  const islandProjectionReady = isIslandProjectionReady(activeTrip, listState);
 
   const lifetimeScore =
     activeTrip && listState.kind === "ready"
@@ -337,7 +348,12 @@ export function App({ companyId }: { companyId: string }) {
             </div>
             {activeTrip && <span>진행 중</span>}
           </div>
-          <Island activeTrip={activeTrip} tasks={listState.kind === "ready" ? listState.tasks : []} />
+          <Island
+            activeTrip={islandProjectionReady ? activeTrip : activeTrip === null ? null : undefined}
+            tasks={islandProjectionReady && listState.kind === "ready" ? listState.tasks : []}
+            selected={selectedAttempt}
+            onSelect={setSelectedAttempt}
+          />
         </section>
 
         <div className="workspace">
@@ -352,10 +368,20 @@ export function App({ companyId }: { companyId: string }) {
             <TaskList
               state={listState}
               onRetry={() => void load()}
-              selectedTaskId={selectedTaskId}
-              onSelect={(task) => setSelectedTaskId(task.id)}
+              selectedTaskId={selectedAttempt?.issueId}
+              onSelect={(task) =>
+                setSelectedAttempt({ issueId: task.id, attemptNumber: task.ruinHistory?.attemptNumber ?? 1 })
+              }
             />
-            {selectedTask && <ReviewPanel key={selectedTask.id} task={selectedTask} onTaskRefresh={load} />}
+            {selectedTask && selectedAttempt && (
+              <ReviewPanel
+                key={`${selectedTask.id}:${selectedAttempt.attemptNumber}`}
+                task={selectedTask}
+                attemptNumber={selectedAttempt.attemptNumber}
+                readOnly={selectedAttempt.attemptNumber !== (selectedTask.ruinHistory?.attemptNumber ?? 1)}
+                onTaskRefresh={load}
+              />
+            )}
           </section>
 
           <aside aria-labelledby="create-task-heading">

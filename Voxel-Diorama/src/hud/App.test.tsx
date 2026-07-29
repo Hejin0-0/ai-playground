@@ -5,7 +5,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { IslandScore } from "../island/Island.tsx";
-import { LifetimeScore, markListStale, TaskList, type TaskListState } from "./App.tsx";
+import { isIslandProjectionReady, LifetimeScore, markListStale, TaskList, type TaskListState } from "./App.tsx";
+import { ReviewPanel } from "./ReviewPanel.tsx";
 import { createTaskListCommitGate, listTasks, type Task } from "./tasks.ts";
 
 const task: Task = {
@@ -99,6 +100,55 @@ function lifetimeScoreShowsTheD10CumulativeTotal() {
   const html = renderToStaticMarkup(<LifetimeScore score={135} />);
   assert.match(html, /평생 누적 점수/);
   assert.match(html, /135점/);
+}
+
+function islandWaitsForTheMatchingApprovalProjection() {
+  const activeTrip = {
+    id: "trip-1",
+    rootIssueId: "trip-root",
+    themeId: "base",
+    startedAt: "2026-07-29T00:00:00.000Z",
+    active: true,
+  };
+  assert.equal(isIslandProjectionReady(undefined, { kind: "ready", tasks: [task], rootIssueId: undefined }), false);
+  assert.equal(isIslandProjectionReady(activeTrip, { kind: "ready", tasks: [task], rootIssueId: undefined }), false);
+  assert.equal(isIslandProjectionReady(activeTrip, { kind: "ready", tasks: [task], rootIssueId: "other-root" }), false);
+  assert.equal(isIslandProjectionReady(activeTrip, { kind: "ready", tasks: [task], rootIssueId: "trip-root" }), true);
+}
+
+function historicalRuinCardShowsItsOwnAttemptAndReason() {
+  const html = renderToStaticMarkup(
+    <ReviewPanel
+      task={{
+        ...task,
+        status: "done",
+        approved: true,
+        assigneeAgentId: "codex-dev",
+        ruinHistory: {
+          attemptNumber: 2,
+          ruins: [{ approvalId: "reject-1", attemptNumber: 1, decisionNote: "첫 시도의 반려 사유", createdAt: "2026-07-29T00:00:00.000Z" }],
+        },
+      }}
+      attemptNumber={1}
+      readOnly
+      onTaskRefresh={async () => {}}
+    />,
+  );
+  for (const expected of [task.title, "담당 직원", "codex-dev", "시도 1", "반려됨", "첫 시도의 반려 사유", "증거와 검수 상태"]) {
+    assert.match(html, new RegExp(expected));
+  }
+}
+
+async function historicalCardsDoNotCarryWriteControls() {
+  const source = await fs.readFile(path.resolve(process.cwd(), "src/hud/ReviewPanel.tsx"), "utf8");
+  assert.match(source, /\{!readOnly && <section className="panel-subsection" aria-labelledby="submit-evidence-heading">/, "C6: archive/history cards must not submit evidence");
+  assert.match(source, /\{!readOnly && <section className="panel-subsection" aria-labelledby="review-decision-heading"/, "C6: archive/history cards must not show approval controls");
+}
+
+async function oneSelectionStateDrivesBothListAndIsland() {
+  const source = await fs.readFile(path.resolve(process.cwd(), "src/hud/App.tsx"), "utf8");
+  assert.match(source, /selected=\{selectedAttempt\}[\s\S]*onSelect=\{setSelectedAttempt\}/, "C4: an island click must update the shared selection state");
+  assert.match(source, /selectedTaskId=\{selectedAttempt\?\.issueId\}[\s\S]*setSelectedAttempt\(\{ issueId: task\.id/, "C4: a list click must update that same selection state");
 }
 
 // C4: the lifetime stat must be derived from totalScore(buildings) — never a separately
@@ -235,10 +285,14 @@ staleListWarnsThatLiveUpdatesStopped();
 freshListHasNoStaleWarning();
 islandScoreShowsTheD10Sum();
 lifetimeScoreShowsTheD10CumulativeTotal();
+islandWaitsForTheMatchingApprovalProjection();
+historicalRuinCardShowsItsOwnAttemptAndReason();
 
 // --- run async tests ---
 pollingSeamWiredInAppCatch()
   .then(() => lifetimeScoreIsWiredFromTotalScoreOverBuildingsOnly())
+  .then(() => historicalCardsDoNotCarryWriteControls())
+  .then(() => oneSelectionStateDrivesBothListAndIsland())
   .then(() => pollingFailureMarksStaleThenRecovers())
   .then(() => console.log("App.test.tsx: all checks passed"))
   .catch((e) => {

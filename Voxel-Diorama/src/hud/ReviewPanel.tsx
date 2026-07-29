@@ -10,6 +10,7 @@ import {
   createEvidenceSubmitter,
   createReviewSubmitter,
   loadTaskEvidence,
+  approvalForAttempt,
   mergeApproval,
   mergeEvidenceComment,
   type ReviewDecision,
@@ -57,11 +58,21 @@ function authorLabel(authorType: string) {
   return authorType;
 }
 
+export function attemptDecision(task: Task, attemptNumber: number) {
+  const ruin = task.ruinHistory?.ruins.find((entry) => entry.attemptNumber === attemptNumber);
+  if (ruin) return { label: "반려됨", decisionNote: ruin.decisionNote };
+  return { label: task.approved ? "승인됨" : "검수 기록 대기", decisionNote: null };
+}
+
 export function ReviewPanel({
   task,
+  attemptNumber,
+  readOnly = false,
   onTaskRefresh,
 }: {
   task: Task;
+  attemptNumber: number;
+  readOnly?: boolean;
   onTaskRefresh: () => Promise<void>;
 }) {
   const [loadRevision, setLoadRevision] = useState(0);
@@ -82,6 +93,9 @@ export function ReviewPanel({
     state.kind === "ready"
       ? state.evidence.approvals.find(({ status }) => status === "pending" || status === "revision_requested")
       : undefined;
+  const selectedApproval =
+    state.kind === "ready" ? approvalForAttempt(task, attemptNumber, state.evidence.approvals) : undefined;
+  const decision = attemptDecision(task, attemptNumber);
 
   useEffect(() => {
     let cancelled = false;
@@ -184,6 +198,9 @@ export function ReviewPanel({
             <p className="eyebrow">EVIDENCE &amp; REVIEW</p>
             <h2>{task.identifier} 상세</h2>
             <p>{task.title}</p>
+            <p>담당 직원 · {task.assigneeAgentId ?? "미배정"}</p>
+            <p>시도 {attemptNumber} · {decision.label}</p>
+            {decision.decisionNote && <p>반려 사유 · {decision.decisionNote}</p>}
           </div>
           <Badge variant={task.status === "in_review" ? "warning" : "neutral"} label={STATUS_LABELS[task.status]} />
         </header>
@@ -271,7 +288,7 @@ export function ReviewPanel({
               )}
             </section>
 
-            <section className="panel-subsection" aria-labelledby="submit-evidence-heading">
+            {!readOnly && <section className="panel-subsection" aria-labelledby="submit-evidence-heading">
               <form className="panel-form" onSubmit={submitEvidence} noValidate>
                 <h3 id="submit-evidence-heading">증거 제출</h3>
                 <TextArea
@@ -301,24 +318,25 @@ export function ReviewPanel({
                   isDisabled={isSubmittingEvidence}
                 />
               </form>
-            </section>
+            </section>}
 
-            <section className="panel-subsection" aria-labelledby="review-decision-heading" aria-busy={isReviewing}>
+            {!readOnly && <section className="panel-subsection" aria-labelledby="review-decision-heading" aria-busy={isReviewing}>
               <div className="subsection-heading">
                 <h3 id="review-decision-heading">인간 검수 결정</h3>
-                {state.evidence.approvals[0] && (
+                {selectedApproval && (
                   <Badge
                     variant={
-                      state.evidence.approvals[0].status === "approved"
+                      selectedApproval.status === "approved"
                         ? "success"
-                        : state.evidence.approvals[0].status === "rejected"
+                        : selectedApproval.status === "rejected"
                           ? "error"
                           : "warning"
                     }
-                    label={APPROVAL_LABELS[state.evidence.approvals[0].status]}
+                    label={APPROVAL_LABELS[selectedApproval.status]}
                   />
                 )}
               </div>
+              {selectedApproval?.decisionNote && <p>검수 기록 · {selectedApproval.decisionNote}</p>}
               {!activeApproval && (
                 <p className="empty-note">
                   연결된 대기 승인이 없습니다. Paperclip에서 이 업무에 approval이 연결되면 결정할 수 있습니다.
@@ -372,7 +390,7 @@ export function ReviewPanel({
                   {reviewMessage}
                 </p>
               )}
-            </section>
+            </section>}
           </>
         )}
       </div>

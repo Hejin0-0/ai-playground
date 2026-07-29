@@ -39,6 +39,7 @@ export interface TaskProjection {
   completedAt: string | null;
   approved: boolean | null;
   ruinHistory: TaskRuinHistory | null;
+  assigneeAgentId?: string | null;
 }
 
 export type Task = TaskProjection;
@@ -74,6 +75,10 @@ function parseTask(value: unknown): Task {
   ) {
     throw new Error("Paperclip 업무 응답 형식이 올바르지 않습니다.");
   }
+  const assigneeAgentId = task.assigneeAgentId;
+  if (!(assigneeAgentId === undefined || assigneeAgentId === null || typeof assigneeAgentId === "string")) {
+    throw new Error("Paperclip 업무 응답 형식이 올바르지 않습니다.");
+  }
   return {
     id: task.id,
     parentId: task.parentId,
@@ -84,6 +89,7 @@ function parseTask(value: unknown): Task {
     completedAt: task.completedAt,
     approved: null,
     ruinHistory: null,
+    ...(assigneeAgentId === undefined ? {} : { assigneeAgentId }),
   };
 }
 
