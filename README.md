@@ -7,5 +7,8 @@
 | 프로젝트 | 설명 | 기술 스택 |
 |---|---|---|
 | [Voxel-Diorama](./Voxel-Diorama) | 설명 추가 예정 | Three.js |
-| [infra-diorama](./infra-diorama) | 스크롤로 5단계 공사 과정을 보여주는 다크 테마 스크롤리텔링 사이트 | React, R3F, GSAP, Lenis |
+
+## prompt-test
+
+유명한 프롬프트를 그대로 실행해보는 실험 폴더. 각 하위 폴더가 프롬프트 하나에 대응. 자세한 목록은 [prompt-test/README.md](./prompt-test/README.md) 참고.
 
