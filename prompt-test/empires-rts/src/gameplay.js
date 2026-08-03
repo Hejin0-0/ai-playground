@@ -32,12 +32,12 @@ function crearEntidad(ficha, categoria, equipo, numero) {
 }
 
 export function crearEstado({ equipo = 'jugador', recursos = {} } = {}) {
-  if (typeof equipo !== 'string' || !equipo.trim()) throw new TypeError('El equipo debe tener un nombre.');
+  if (typeof equipo !== 'string' || !equipo.trim()) throw new TypeError('The team must have a name.');
 
   const bolsa = { ...RECURSOS_INICIALES, ...recursos };
   for (const recurso of RECURSO_IDS) {
     if (!Number.isFinite(bolsa[recurso]) || bolsa[recurso] < 0) {
-      throw new TypeError(`La cantidad de ${RECURSOS[recurso].nombre.toLowerCase()} no es válida.`);
+      throw new TypeError(`The amount of ${RECURSOS[recurso].nombre.toLowerCase()} is invalid.`);
     }
   }
 
@@ -70,29 +70,29 @@ function mensajeRecursos(recursos, coste) {
   const faltantes = RECURSO_IDS
     .filter((recurso) => recursos[recurso] < (coste[recurso] ?? 0))
     .map((recurso) => RECURSOS[recurso].nombre.toLowerCase());
-  return `Faltan recursos: ${faltantes.join(', ')}.`;
+  return `Insufficient resources: ${faltantes.join(', ')}.`;
 }
 
 export function recolectar(estado, recurso, cantidad) {
-  if (!RECURSO_IDS.includes(recurso)) return fallo(estado, 'Ese recurso no existe.');
-  if (!Number.isFinite(cantidad) || cantidad <= 0) return fallo(estado, 'La recolección debe ser mayor que cero.');
+  if (!RECURSO_IDS.includes(recurso)) return fallo(estado, 'That resource does not exist.');
+  if (!Number.isFinite(cantidad) || cantidad <= 0) return fallo(estado, 'The gathered amount must be greater than zero.');
 
   return exito({
     ...estado,
     recursos: { ...estado.recursos, [recurso]: estado.recursos[recurso] + cantidad },
-  }, `Se han reunido ${cantidad} de ${RECURSOS[recurso].nombre.toLowerCase()}.`);
+  }, `Gathered ${cantidad} ${RECURSOS[recurso].nombre.toLowerCase()}.`);
 }
 
 export function entrenarUnidad(estado, tipo) {
   const ficha = obtenerUnidad(tipo, estado.era);
-  if (!ficha) return fallo(estado, 'Esa unidad no está disponible en esta era.');
+  if (!ficha) return fallo(estado, 'That unit is not available in this age.');
 
   const tieneProductor = estado.edificios.some(
     (edificio) => edificio.vida > 0 && edificio.entrena.includes(tipo),
   );
-  if (!tieneProductor) return fallo(estado, `Necesitas un edificio que pueda entrenar ${ficha.nombre.toLowerCase()}.`);
+  if (!tieneProductor) return fallo(estado, `You need a building that can train ${ficha.nombre.toLowerCase()}.`);
   if (estado.poblacion.actual + ficha.poblacion > estado.poblacion.limite) {
-    return fallo(estado, 'Necesitas más viviendas para aumentar el límite de población.');
+    return fallo(estado, 'Build more housing to increase the population limit.');
   }
   if (!puedePagar(estado.recursos, ficha.coste)) return fallo(estado, mensajeRecursos(estado.recursos, ficha.coste));
 
@@ -104,12 +104,12 @@ export function entrenarUnidad(estado, tipo) {
     unidades: [...estado.unidades, unidad],
     siguienteId: estado.siguienteId + 1,
   };
-  return exito(siguiente, `${unidad.nombre} entrenado.`, unidad);
+  return exito(siguiente, `${unidad.nombre} trained.`, unidad);
 }
 
 export function construirEdificio(estado, tipo) {
   const ficha = obtenerEdificio(tipo, estado.era);
-  if (!ficha) return fallo(estado, 'Ese edificio no está disponible en esta era.');
+  if (!ficha) return fallo(estado, 'That building is not available in this age.');
   if (!puedePagar(estado.recursos, ficha.coste)) return fallo(estado, mensajeRecursos(estado.recursos, ficha.coste));
 
   const edificio = crearEntidad(ficha, 'edificio', estado.equipo, estado.siguienteId);
@@ -121,7 +121,7 @@ export function construirEdificio(estado, tipo) {
     edificios: [...estado.edificios, edificio],
     siguienteId: estado.siguienteId + 1,
   };
-  return exito(siguiente, `${edificio.nombre} construido.`, edificio);
+  return exito(siguiente, `${edificio.nombre} constructed.`, edificio);
 }
 
 export function recalcularPoblacion(estado) {
@@ -133,29 +133,29 @@ export function recalcularPoblacion(estado) {
 
 export function avanzarEra(estado) {
   const indice = ERA_IDS.indexOf(Number(estado.era));
-  if (indice < 0) return fallo(estado, 'La era actual no es válida.');
-  if (indice === ERA_IDS.length - 1) return fallo(estado, 'Ya has alcanzado la última era.');
+  if (indice < 0) return fallo(estado, 'The current age is invalid.');
+  if (indice === ERA_IDS.length - 1) return fallo(estado, 'You have already reached the final age.');
 
   const siguienteEra = ERA_IDS[indice + 1];
   const coste = COSTES_AVANCE[siguienteEra];
   if (!puedePagar(estado.recursos, coste)) return fallo(estado, mensajeRecursos(estado.recursos, coste));
 
   const siguiente = { ...estado, era: siguienteEra, recursos: pagar(estado.recursos, coste) };
-  return exito(siguiente, `Has avanzado a la ${obtenerEra(siguienteEra).nombre}.`);
+  return exito(siguiente, `Advanced to the ${obtenerEra(siguienteEra).nombre}.`);
 }
 
 export function atacar(atacante, objetivo) {
   if (!atacante || !objetivo) {
-    return { exito: false, atacante, objetivo, dano: 0, destruido: false, mensaje: 'Falta el atacante o el objetivo.' };
+    return { exito: false, atacante, objetivo, dano: 0, destruido: false, mensaje: 'The attacker or target is missing.' };
   }
   if (atacante.equipo === objetivo.equipo) {
-    return { exito: false, atacante, objetivo, dano: 0, destruido: objetivo.vida <= 0, mensaje: 'No puedes atacar a tu propio equipo.' };
+    return { exito: false, atacante, objetivo, dano: 0, destruido: objetivo.vida <= 0, mensaje: 'You cannot attack your own team.' };
   }
   if (!Number.isFinite(atacante.ataque) || atacante.ataque <= 0) {
-    return { exito: false, atacante, objetivo, dano: 0, destruido: objetivo.vida <= 0, mensaje: 'Esta entidad no puede atacar.' };
+    return { exito: false, atacante, objetivo, dano: 0, destruido: objetivo.vida <= 0, mensaje: 'This entity cannot attack.' };
   }
   if (!Number.isFinite(objetivo.vida) || objetivo.vida <= 0) {
-    return { exito: false, atacante, objetivo, dano: 0, destruido: true, mensaje: 'El objetivo ya está destruido.' };
+    return { exito: false, atacante, objetivo, dano: 0, destruido: true, mensaje: 'The target has already been destroyed.' };
   }
 
   const dano = Math.max(1, Math.round(atacante.ataque - Math.max(0, objetivo.defensa ?? 0)));
@@ -168,8 +168,8 @@ export function atacar(atacante, objetivo) {
     dano,
     destruido,
     mensaje: destruido
-      ? `${objetivo.nombre} ha sido destruido.`
-      : `${atacante.nombre} inflige ${dano} de daño.`,
+      ? `${objetivo.nombre} has been destroyed.`
+      : `${atacante.nombre} deals ${dano} damage.`,
   };
 }
 

@@ -1,64 +1,64 @@
-# Dominios 2100
+# Dominions 2100
 
-Vertical slice jugable de estrategia en tiempo real, realizado con Three.js y sin recursos gráficos binarios. El mapa, el agua, la costa, la vegetación, las unidades, los edificios, los iconos de mundo y los efectos se generan en código.
+Playable real-time strategy vertical slice built with Three.js and no binary graphics assets. The map, water, coastline, vegetation, units, buildings, world-space icons, and effects are all generated in code.
 
-## Ejecutar
+## Run
 
 ```bash
 npm install
 npm run dev
 ```
 
-Para verificar la entrega:
+To verify the deliverable:
 
 ```bash
 npm run check
 ```
 
-## Equivalencias históricas
+## Historical equivalents
 
-| Dominios 2100 | Periodo | Equivalente en Age of Empires II | Cambio visual |
+| Dominions 2100 | Period | Age of Empires II equivalent | Visual change |
 |---|---:|---|---|
-| Era del Vapor | 1800 | Edad Oscura | Ladrillo, madera, carbón y producción artesanal |
-| Era Industrial | 1900 | Edad Feudal | Acero, motores, hormigón y producción en serie |
-| Era Digital | 2000 | Edad de los Castillos | Redes, automatización y guerra de precisión |
-| Era de Fusión | 2100 | Edad Imperial | Materia programable, energía limpia y unidades sintéticas |
+| Steam Age | 1800 | Dark Age | Brick, timber, coal, and artisanal production |
+| Industrial Age | 1900 | Feudal Age | Steel, engines, concrete, and mass production |
+| Digital Age | 2000 | Castle Age | Networks, automation, and precision warfare |
+| Fusion Age | 2100 | Imperial Age | Programmable matter, clean energy, and synthetic units |
 
-## Controles
+## Controls
 
-- `WASD` o flechas: mover la cámara; `Shift` acelera.
-- `Q` / `E`: girar 15 grados.
-- Rueda: zoom hacia el cursor.
-- Clic o arrastre: selección individual o múltiple; `Shift` suma o quita unidades.
-- Doble clic: seleccionar todas las unidades visibles del mismo tipo.
-- Clic derecho: mover, atacar o recolectar.
-- `H`: volver al centro de mando.
-- `.`: buscar un operario ocioso.
-- `1`–`9`: ejecutar las órdenes visibles.
-- `Esc`: cancelar una construcción.
+- `WASD` or arrow keys: move the camera; hold `Shift` to move faster.
+- `Q` / `E`: rotate by 15 degrees.
+- Mouse wheel: zoom toward the cursor.
+- Click or drag: select one or multiple units; hold `Shift` to add or remove units from the selection.
+- Double-click: select all visible units of the same type.
+- Right-click: move, attack, or gather.
+- `H`: return to the command center.
+- `.`: find an idle worker.
+- `1`–`9`: execute the visible commands.
+- `Esc`: cancel building placement.
 
-## Qué incluye
+## Included features
 
-- Economía con cuatro recursos que cambian de identidad por era, población, recolección activa e ingresos de edificios.
-- Nueve órdenes contextuales: cuatro unidades, cuatro edificios y avance de era.
-- Colocación de edificios con previsualización y validación del terreno.
-- Base inicial activa, caminos, unidades en formación, combate, proyectiles, daño, barras de vida, escombros e incursiones de IA.
-- Remodelado procedural de todas las entidades al avanzar de era.
-- Cámara ortográfica isométrica con inercia, borde de pantalla, zoom al cursor y sacudida de impacto.
-- HUD completo en español, estadísticas, minimapa sincronizado, objetivos, alertas, ayuda, audio WebAudio y modo de movimiento reducido.
-- Niebla de guerra suavizada con estados visible/recordado/no explorado y ocultación táctica de recursos y enemigos.
-- Terreno determinista con texturas periódicas, agua animada, costa, cobertura instanciada, cielo, atmósferas por era, sombras y postproceso.
-- Feedback geométrico distinto para mover, atacar, recolectar, construir e impactar.
+- Economy with four resources whose identities change by era, a population system, active gathering, and income-generating buildings.
+- Nine contextual commands: four units, four buildings, and era advancement.
+- Building placement with a preview and terrain validation.
+- Active starting base, roads, units in formation, combat, projectiles, damage, health bars, debris, and AI raids.
+- Procedural remodeling of every entity when advancing to a new era.
+- Isometric orthographic camera with inertia, edge scrolling, zoom-to-cursor, and impact shake.
+- Complete English-language HUD, statistics, synchronized minimap, objectives, alerts, help, Web Audio, and reduced-motion mode.
+- Soft-edged fog of war with visible, remembered, and unexplored states, plus tactical concealment of resources and enemies.
+- Deterministic terrain with tiling textures, animated water, coastline, instanced ground cover, sky, era-specific atmospheres, shadows, and post-processing.
+- Distinct geometric feedback for moving, attacking, gathering, building, and landing hits.
 
-## Arquitectura
+## Architecture
 
-- `src/catalog.js`: eras y fichas de unidades/edificios.
-- `src/gameplay.js`: reglas puras e inmutables de economía, población, avance y combate.
-- `src/visibility.js`: cuadrícula persistente compartida por niebla, entidades y minimapa.
-- `src/world.js`: generación visual y fábricas Three.js.
-- `src/main.js`: integración, entrada, IA, cámara y bucle de juego.
-- `src/styles.css`: sistema visual del HUD y sus variantes por era.
+- `src/catalog.js`: eras and unit/building definitions.
+- `src/gameplay.js`: pure, immutable rules for the economy, population, advancement, and combat.
+- `src/visibility.js`: persistent grid shared by the fog of war, entities, and minimap.
+- `src/world.js`: visual generation and Three.js factories.
+- `src/main.js`: integration, input, AI, camera, and game loop.
+- `src/styles.css`: the HUD visual system and its era-specific variants.
 
-## Referencias
+## References
 
-La gramática visual se contrastó con material oficial de *Age of Empires II: Definitive Edition*. También se consultó el proyecto MIT [alandaitch/imperios-1800-2100](https://github.com/alandaitch/imperios-1800-2100) como referencia técnica para detalle procedural, cámara RTS y evaluación de contraste; esta implementación mantiene una arquitectura y código propios.
+The visual language was evaluated against official *Age of Empires II: Definitive Edition* material. The MIT-licensed [alandaitch/imperios-1800-2100](https://github.com/alandaitch/imperios-1800-2100) project was also consulted as a technical reference for procedural detail, RTS camera behavior, and contrast evaluation; this implementation retains its own architecture and code.
