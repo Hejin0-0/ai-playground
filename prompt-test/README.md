@@ -1,9 +1,10 @@
 # prompt-test
 
-유명한/눈에 띄는 프롬프트를 그대로 실행해서 결과물을 확인해보는 실험 폴더. 여기 들어가는 프로젝트는 정식 포트폴리오가 아니라 "이 프롬프트를 넣으면 뭐가 나오는지" 테스트한 결과물이다. 각 하위 폴더에 원본 프롬프트를 담은 `PROMPT.md`를 둔다.
+An experimental directory for running notable prompts and reviewing the results. These projects are prompt experiments rather than polished portfolio pieces. Each project keeps its original prompt in a local `PROMPT.md` file.
 
-## 프로젝트 목록
+## Projects
 
-| 프로젝트 | 프롬프트 요약 | 기술 스택 |
+| Project | Prompt summary | Tech stack |
 |---|---|---|
-| [infra-diorama](./infra-diorama) | 스크롤로 5단계 공사 과정을 보여주는 다크 테마 B2B 인프라 스크롤리텔링 사이트 | React, R3F, GSAP, Lenis |
+| [infra-diorama](./infra-diorama) | A dark B2B infrastructure scrolling story that presents a five-stage construction process | React, R3F, GSAP, Lenis |
+| [empires-rts](./empires-rts) | Dominions 2100, a browser-playable Three.js RTS spanning 1800–2100 with economy, construction, combat, AI, fog of war, and responsive English controls | Three.js, Vite, JavaScript |
