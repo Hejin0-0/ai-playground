@@ -44,9 +44,9 @@ function hash2(x, z, seed) {
 }
 
 /*
- * Versión mínima propia inspirada en la biblioteca MIT de referencia:
+ * Minimal in-house version inspired by the reference MIT library:
  * https://github.com/alandaitch/imperios-1800-2100/blob/main/src/art/ProceduralTextures.js
- * API de textura: https://threejs.org/docs/pages/CanvasTexture.html
+ * Texture API: https://threejs.org/docs/pages/CanvasTexture.html
  */
 const surfaceTextures = new Map();
 
@@ -222,7 +222,7 @@ function makeTerrain(size, segments, waterLevel, heightAt, seed) {
       metalness: 0.02,
     }),
   );
-  terrain.name = 'Terreno estratégico';
+  terrain.name = 'Strategic terrain';
   terrain.receiveShadow = true;
   terrain.userData = { worldSurface: true, raycastRole: 'terrain' };
   return terrain;
@@ -319,7 +319,7 @@ function makeWater(size, waterLevel) {
   });
   const water = new THREE.Mesh(geometry, material);
   water.position.y = waterLevel;
-  water.name = 'Océano';
+  water.name = 'Ocean';
   water.receiveShadow = true;
   water.renderOrder = 2;
   water.userData = { worldSurface: true, raycastRole: 'water' };
@@ -366,7 +366,7 @@ function makeSky(size) {
       fog: false,
     }),
   );
-  sky.name = 'Cielo atmosférico';
+  sky.name = 'Atmospheric sky';
   sky.renderOrder = -1000;
   sky.userData.raycastIgnore = true;
   return sky;
@@ -374,7 +374,7 @@ function makeSky(size) {
 
 function makeScenery(size, waterLevel, heightAt, seed) {
   const group = new THREE.Group();
-  group.name = 'Vegetación y rocas';
+  group.name = 'Vegetation and rocks';
   group.userData = { scenery: true, raycastIgnore: true };
   const random = seededRandom(`${seed}:scenery`);
   const numericSeed = seedValue(seed);
@@ -477,7 +477,7 @@ function makeScenery(size, waterLevel, heightAt, seed) {
 
 function makeLighting(size, shadowMapSize) {
   const lights = new THREE.Group();
-  lights.name = 'Iluminación mundial';
+  lights.name = 'World lighting';
   const hemisphere = new THREE.HemisphereLight(0xb8d9ff, 0x3d3327, 1.55);
   const fill = new THREE.DirectionalLight(0x91b5d3, 0.55);
   fill.position.set(-35, 28, 38);
@@ -497,7 +497,7 @@ function makeLighting(size, shadowMapSize) {
   return lights;
 }
 
-/** Activa el pipeline visual esperado por el mundo sin crear otro renderer. */
+/** Enables the world's expected visual pipeline without creating another renderer. */
 export function configureRenderer(renderer, { exposure = 1.05, pixelRatio = globalThis.devicePixelRatio || 1 } = {}) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -508,7 +508,7 @@ export function configureRenderer(renderer, { exposure = 1.05, pixelRatio = glob
   return renderer;
 }
 
-/** Cámara ortográfica isométrica; usa resizeIsometricCamera al cambiar el viewport. */
+/** Isometric orthographic camera; use resizeIsometricCamera when the viewport changes. */
 export function createIsometricCamera({ width = 16, height = 9, viewSize = 48, near = 0.1, far = 400 } = {}) {
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, near, far);
   camera.position.set(48, 46, 48);
@@ -530,8 +530,8 @@ export function resizeIsometricCamera(camera, width, height) {
 }
 
 /**
- * Crea el escenario y devuelve una API pequeña: register, unregister, addEffect,
- * heightAt, update y dispose. Las coordenadas de heightAt son locales al grupo.
+ * Creates the scene and returns a small API: register, unregister, addEffect,
+ * heightAt, update, and dispose. heightAt coordinates are local to the group.
  */
 export function createWorld(options = {}) {
   if (options?.isScene) options = { scene: options };
@@ -547,7 +547,7 @@ export function createWorld(options = {}) {
   if (renderer) configureRenderer(renderer, options);
 
   const group = new THREE.Group();
-  group.name = 'Mundo Empires';
+  group.name = 'Empires World';
   group.userData = { world: true, size, waterLevel, seed };
   const heightAt = makeHeightSampler(size, seed);
   const terrain = makeTerrain(size, segments, waterLevel, heightAt, seed);
@@ -729,7 +729,7 @@ function addPart(root, geometry, material, position, scale, rotation = [0, 0, 0]
   return mesh;
 }
 
-// ponytail: un draw extra por entidad; instanciar contornos si la escala pasa a cientos de unidades.
+// ponytail: one extra draw per entity; instance outlines if the scale reaches hundreds of units.
 function addEntityOutline(root) {
   let largest = null;
   let largestVolume = 0;
@@ -748,7 +748,7 @@ function addEntityOutline(root) {
     outlineGeometries.set(largest.geometry, geometry);
   }
   const outline = new THREE.LineSegments(geometry, outlineMaterial);
-  outline.name = 'Contorno de lectura';
+  outline.name = 'Readability outline';
   outline.scale.setScalar(1.012);
   outline.renderOrder = 4;
   outline.raycast = () => {};
@@ -788,7 +788,7 @@ function makeEntityRoot(entityType, options, radius) {
     new THREE.RingGeometry(radius * 0.92, radius * 1.08, 48),
     new THREE.MeshBasicMaterial({ color: 0xf3d47a, transparent: true, opacity: 0.96, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }),
   );
-  ring.name = 'Indicador de selección';
+  ring.name = 'Selection indicator';
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.075;
   ring.visible = false;
@@ -870,7 +870,7 @@ function addArtillery(root, materials, tier) {
   if (tier >= 2) addPart(root, GEO.box, materials.glass, [-0.28, 1.18, 0], [0.46, 0.25, 0.66]);
 }
 
-/** Fábrica procedural de las unidades estables del gameplay. */
+/** Procedural factory for the gameplay's stable unit types. */
 export function createUnit(options = {}) {
   const type = options.type || 'infanteria';
   const era = normalizeEra(options.era);
@@ -919,7 +919,7 @@ function addHistoricFacade(root, materials, width, height, depth, type) {
   addPart(root, GEO.box, detail, [0, height * 0.8, front], [width * 0.88, 0.14, 0.13]);
 }
 
-/** Fábrica procedural de edificios; footprint queda en userData para colocación. */
+/** Procedural building factory; footprint remains in userData for placement. */
 export function createBuilding(options = {}) {
   const type = options.type || 'centro';
   const era = normalizeEra(options.era);
@@ -999,7 +999,7 @@ export function createBuilding(options = {}) {
   return root;
 }
 
-/** Resuelve el root seleccionable desde un Mesh o un Intersection de Raycaster. */
+/** Resolves the selectable root from a Mesh or Raycaster intersection. */
 export function findSelectableRoot(target) {
   let object = target?.object || target;
   while (object && !object.userData?.selectable) object = object.parent;
@@ -1014,7 +1014,7 @@ export function setSelected(target, selected = true) {
   return root;
 }
 
-/** Pulso autocontenido para órdenes/impactos; world.addEffect gestiona su vida. */
+/** Self-contained pulse for commands and impacts; world.addEffect manages its lifetime. */
 export function createCommandFX(position, color = TEAM_COLORS.player, kind = 'move') {
   const group = new THREE.Group();
   setVector(group.position, position);

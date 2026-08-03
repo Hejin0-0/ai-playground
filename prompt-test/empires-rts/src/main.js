@@ -51,9 +51,9 @@ const minimap = $('#minimap');
 const mapContext = minimap.getContext('2d');
 
 const FACTIONS = {
-  atlas: { nombre: 'Liga Atlas', marca: 'A', color: 0x28b8ff, acento: '#72d7c4' },
-  helios: { nombre: 'Pacto Helios', marca: 'H', color: 0xf1a23e, acento: '#f2bd67' },
-  boreal: { nombre: 'Unión Boreal', marca: 'B', color: 0x8b75e8, acento: '#a89bee' },
+  atlas: { nombre: 'Atlas League', marca: 'A', color: 0x28b8ff, acento: '#72d7c4' },
+  helios: { nombre: 'Helios Pact', marca: 'H', color: 0xf1a23e, acento: '#f2bd67' },
+  boreal: { nombre: 'Boreal Union', marca: 'B', color: 0x8b75e8, acento: '#a89bee' },
 };
 
 const scene = new THREE.Scene();
@@ -123,7 +123,7 @@ function loadingStep(percent, message) {
   loadingStatus.textContent = message;
 }
 
-loadingStep(24, 'Modelando continente…');
+loadingStep(24, 'Shaping the continent…');
 
 function groundY(x, z) {
   return world.heightAt(x, z);
@@ -140,7 +140,7 @@ function createFogOfWar() {
   const field = createVisibilityField({ worldSize: mapSize, resolution: 96, radius: 15 });
   const pixels = new Uint8Array(field.resolution * field.resolution * 4);
   const texture = new THREE.DataTexture(pixels, field.resolution, field.resolution, THREE.RGBAFormat);
-  texture.name = 'Visibilidad persistente';
+  texture.name = 'Persistent visibility';
   texture.minFilter = texture.magFilter = THREE.LinearFilter;
   texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
   field.writeRgba(pixels);
@@ -186,7 +186,7 @@ function createFogOfWar() {
     fog: false,
   });
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = 'Niebla de guerra';
+  mesh.name = 'Fog of war';
   mesh.renderOrder = 100;
   mesh.visible = false;
   mesh.userData = { scenery: 'fog-of-war', raycastIgnore: true };
@@ -228,10 +228,10 @@ function addMesh(root, geometry, material, position, scale, rotation = [0, 0, 0]
 }
 
 const RESOURCE_VISUALS = {
-  alimentos: { color: 0xd9ad52, glow: 0x5d3f0c, nombre: 'Cultivos de altura' },
-  materiales: { color: 0xa7b4bc, glow: 0x253d47, nombre: 'Veta de materiales' },
-  energia: { color: 0x54e1cd, glow: 0x0a6058, nombre: 'Fuente geotérmica' },
-  datos: { color: 0x9c8aff, glow: 0x332a78, nombre: 'Archivo precursor' },
+  alimentos: { color: 0xd9ad52, glow: 0x5d3f0c, nombre: 'Highland crops' },
+  materiales: { color: 0xa7b4bc, glow: 0x253d47, nombre: 'Material deposit' },
+  energia: { color: 0x54e1cd, glow: 0x0a6058, nombre: 'Geothermal vent' },
+  datos: { color: 0x9c8aff, glow: 0x332a78, nombre: 'Precursor archive' },
 };
 
 function createResourceNode(type, x, z) {
@@ -381,7 +381,7 @@ function createRoad(points, width = 1.45) {
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   const road = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x8a7657, roughness: 1, metalness: 0, side: THREE.DoubleSide }));
-  road.name = 'Camino estratégico';
+  road.name = 'Strategic road';
   road.receiveShadow = true;
   road.userData = { scenery: 'road', raycastIgnore: true };
   world.group.add(road);
@@ -462,12 +462,12 @@ function setupScenario() {
   app.actors.forEach((actor) => updateHealthBadge(actor));
 }
 
-loadingStep(52, 'Desplegando fuerzas…');
+loadingStep(52, 'Deploying forces…');
 setupScenario();
-loadingStep(74, 'Sincronizando mando táctico…');
+loadingStep(74, 'Synchronizing tactical command…');
 
 function resourceIcon(id) {
-  return { alimentos: 'A', materiales: 'M', energia: 'E', datos: 'D' }[id];
+  return { alimentos: 'F', materiales: 'M', energia: 'E', datos: 'D' }[id];
 }
 
 function formatCost(cost = {}) {
@@ -501,7 +501,7 @@ function commandCatalog() {
   return [
     unit('trabajador', '♟', '1'), unit('infanteria', '⌁', '2'), unit('vehiculo', '⬡', '3'), unit('artilleria', '◈', '4'),
     building('vivienda', '⌂', '5'), building('cuartel', '⚔', '6'), building('fabrica', '⚙', '7'), building('laboratorio', '◇', '8'),
-    { id: 'advance', action: 'advance', icon: '⟰', key: '9', label: targetEra ? `Avanzar a ${targetEra}` : 'Era final alcanzada', cost: advanceCost, available: Boolean(targetEra && puedePagar(app.state.recursos, advanceCost)) },
+    { id: 'advance', action: 'advance', icon: '⟰', key: '9', label: targetEra ? `Advance to ${targetEra}` : 'Final Age reached', cost: advanceCost, available: Boolean(targetEra && puedePagar(app.state.recursos, advanceCost)) },
   ];
 }
 
@@ -510,11 +510,11 @@ function renderCommands() {
   const signature = commands.map(({ id, label, available, cost }) => `${id}:${label}:${available}:${formatCost(cost)}`).join('|');
   if (signature === app.commandSignature) return;
   app.commandSignature = signature;
-  $('#orders-title').textContent = `ÓRDENES · ${obtenerEra(app.state.era).nombre.toUpperCase()}`;
+  $('#orders-title').textContent = `ORDERS · ${obtenerEra(app.state.era).nombre.toUpperCase()}`;
   $('#command-grid').innerHTML = commands.map((command) => `
-    <button type="button" data-command="${command.id}" ${command.available ? '' : 'disabled'} title="${command.available ? command.label : `No disponible: ${formatCost(command.cost)}`}">
+    <button type="button" data-command="${command.id}" ${command.available ? '' : 'disabled'} title="${command.available ? command.label : `Unavailable: ${formatCost(command.cost)}`}">
       <span class="command-icon" aria-hidden="true">${command.icon}</span>
-      <span><b>${command.label}</b><small>${formatCost(command.cost) || 'Completado'}</small></span>
+      <span><b>${command.label}</b><small>${formatCost(command.cost) || 'Complete'}</small></span>
       <kbd>${command.key}</kbd>
     </button>`).join('');
 }
@@ -551,9 +551,9 @@ function updateSelectionPanel() {
     $('#stat-range').textContent = range;
   };
   if (!app.selected.length) {
-    $('#selection-class').textContent = 'SIN SELECCIÓN';
-    $('#selection-name').textContent = 'Mando de sector';
-    $('#selection-description').textContent = 'Selecciona una unidad o edificio para ver su estado.';
+    $('#selection-class').textContent = 'NO SELECTION';
+    $('#selection-name').textContent = 'Sector Command';
+    $('#selection-description').textContent = 'Select a unit or building to view its status.';
     $('#health-value').textContent = '—';
     $('#health-fill').style.width = '0%';
     setStats();
@@ -563,9 +563,9 @@ function updateSelectionPanel() {
   if (app.selected.length > 1) {
     const hp = app.selected.reduce((sum, actor) => sum + actor.hp, 0);
     const max = app.selected.reduce((sum, actor) => sum + actor.maxHp, 0);
-    $('#selection-class').textContent = 'GRUPO TÁCTICO';
-    $('#selection-name').textContent = `${app.selected.length} unidades seleccionadas`;
-    $('#selection-description').textContent = 'Orden coordinada lista. Clic derecho para mover o atacar.';
+    $('#selection-class').textContent = 'TACTICAL GROUP';
+    $('#selection-name').textContent = `${app.selected.length} units selected`;
+    $('#selection-description').textContent = 'Coordinated order ready. Right-click to move or attack.';
     $('#health-value').textContent = `${Math.round(hp)} / ${Math.round(max)}`;
     $('#health-fill').style.width = `${(hp / max) * 100}%`;
     setStats(
@@ -577,9 +577,9 @@ function updateSelectionPanel() {
     return;
   }
   const actor = app.selected[0];
-  $('#selection-class').textContent = `${actor.kind === 'unit' ? 'UNIDAD' : 'EDIFICIO'} · ${actor.data.era}`;
+  $('#selection-class').textContent = `${actor.kind === 'unit' ? 'UNIT' : 'BUILDING'} · ${actor.data.era}`;
   $('#selection-name').textContent = actor.data.nombre;
-  $('#selection-description').textContent = actor.data.rol || actor.data.funcion || 'Entidad estratégica.';
+  $('#selection-description').textContent = actor.data.rol || actor.data.funcion || 'Strategic entity.';
   $('#health-value').textContent = `${Math.ceil(actor.hp)} / ${actor.maxHp}`;
   $('#health-fill').style.width = `${(actor.hp / actor.maxHp) * 100}%`;
   setStats(actor.data.ataque || 0, actor.data.defensa || 0, actor.data.alcance || 0);
@@ -593,7 +593,7 @@ function renderHUD() {
     const element = document.querySelector(`.resource[data-resource="${id}"] small`);
     if (element) element.textContent = label.toUpperCase();
   });
-  Object.keys(RECURSOS).forEach((id) => { $(`#resource-${id}`).textContent = Math.floor(app.state.recursos[id]).toLocaleString('es-ES'); });
+  Object.keys(RECURSOS).forEach((id) => { $(`#resource-${id}`).textContent = Math.floor(app.state.recursos[id]).toLocaleString('en-US'); });
   $('#resource-poblacion').textContent = `${app.state.poblacion.actual}/${app.state.poblacion.limite}`;
   $('#mission-clock').textContent = new Date(app.elapsed * 1000).toISOString().slice(14, 19);
   const remaining = Math.max(0, app.waveAt - app.elapsed);
@@ -650,8 +650,8 @@ function cancelPlacement() {
 function beginPlacement(type) {
   cancelPlacement();
   const ficha = obtenerEdificio(type, app.state.era);
-  if (!puedePagar(app.state.recursos, ficha.coste)) return notify('Recursos insuficientes para construir.', true);
-  const preview = createBuilding({ type, era: app.state.era, team: 'player', color: entityColor('player'), name: `Vista previa: ${ficha.nombre}` });
+  if (!puedePagar(app.state.recursos, ficha.coste)) return notify('Not enough resources to build.', true);
+  const preview = createBuilding({ type, era: app.state.era, team: 'player', color: entityColor('player'), name: `Preview: ${ficha.nombre}` });
   preview.userData.selectable = false;
   preview.traverse((child) => {
     if (!child.isMesh) return;
@@ -664,12 +664,12 @@ function beginPlacement(type) {
   app.pendingBuild = { type, ficha, preview, valid: false, position: new THREE.Vector3() };
   canvasHost.classList.add('is-commanding');
   $(`#command-grid [data-command="${type}"]`)?.classList.add('active');
-  notify(`Coloca ${ficha.nombre.toLowerCase()} sobre terreno libre.`);
+  notify(`Place ${ficha.nombre.toLowerCase()} on open ground.`);
 }
 
 function placeBuilding() {
   const pending = app.pendingBuild;
-  if (!pending?.valid) return notify('No puedes construir en esa posición.', true);
+  if (!pending?.valid) return notify('You cannot build in that location.', true);
   const result = construirEdificio(app.state, pending.type);
   if (!result.exito) return notify(result.mensaje, true);
   const position = pending.position.clone();
@@ -700,14 +700,14 @@ function advanceAge() {
   requestAnimationFrame(() => document.body.classList.add('era-transition'));
   setTimeout(() => document.body.classList.remove('era-transition'), 1300);
   notify(result.mensaje);
-  notify(`Bono de era: ${IDENTIDAD_ERAS[app.state.era].bono.nombre}.`);
+  notify(`Age bonus: ${IDENTIDAD_ERAS[app.state.era].bono.nombre}.`);
   sound.fanfare();
   renderHUD();
 }
 
 function executeCommand(id) {
   const command = commandCatalog().find((item) => item.id === id);
-  if (!command?.available) return notify('La orden todavía no está disponible.', true);
+  if (!command?.available) return notify('That order is not available yet.', true);
   if (command.action === 'train') train(command.type);
   else if (command.action === 'build') beginPlacement(command.type);
   else advanceAge();
@@ -765,7 +765,7 @@ function updateBuildPreview(event) {
   app.pendingBuild.position.copy(preview.position);
   tintPreview(preview, valid);
   const tooltip = $('#world-tooltip');
-  tooltip.textContent = valid ? `Construir ${app.pendingBuild.ficha.nombre}` : 'Terreno no válido';
+  tooltip.textContent = valid ? `Build ${app.pendingBuild.ficha.nombre}` : 'Invalid terrain';
   tooltip.style.display = 'block';
   tooltip.style.left = `${event.clientX + 14}px`;
   tooltip.style.top = `${event.clientY + 14}px`;
@@ -782,7 +782,7 @@ function showHover(event) {
   const actor = root.userData.actor;
   tooltip.textContent = actor
     ? `${actor.data.nombre} · ${Math.ceil(actor.hp)}/${actor.maxHp}`
-    : `${root.name} · ${Math.ceil(root.userData.amount)} restantes`;
+    : `${root.name} · ${Math.ceil(root.userData.amount)} remaining`;
   tooltip.style.display = 'block';
   tooltip.style.left = `${event.clientX + 14}px`;
   tooltip.style.top = `${event.clientY + 14}px`;
@@ -873,14 +873,14 @@ function commandSelected(event) {
   if (targetActor?.team === 'enemy') {
     selected.forEach((actor) => { actor.target = targetActor; actor.destination = null; actor.gatherNode = null; });
     world.addEffect(createCommandFX(targetActor.root.position, TEAM_COLORS.enemy, 'attack'));
-    notify(`Atacando ${targetActor.data.nombre.toLowerCase()}.`, true);
+    notify(`Attacking ${targetActor.data.nombre.toLowerCase()}.`, true);
     return;
   }
   if (root?.userData.resource) {
     const workers = selected.filter((actor) => actor.type === 'trabajador');
     workers.forEach((actor) => { actor.gatherNode = root; actor.target = null; actor.destination = root.position.clone(); });
     world.addEffect(createCommandFX(root.position, RESOURCE_VISUALS[root.userData.resource].color, 'gather'));
-    notify(workers.length ? `Recolectando ${RECURSOS[root.userData.resource].nombre.toLowerCase()}.` : 'Solo los operarios pueden recolectar.', !workers.length);
+    notify(workers.length ? `Gathering ${RECURSOS[root.userData.resource].nombre.toLowerCase()}.` : 'Only workers can gather resources.', !workers.length);
     return;
   }
   const hit = groundHit(hits);
@@ -922,7 +922,7 @@ function makeProjectile(source, target, color) {
 function createDebrisFX(position, color) {
   const group = new THREE.Group();
   group.position.copy(position);
-  group.name = 'Escombros de destrucción';
+  group.name = 'Destruction debris';
   const geometry = new THREE.BoxGeometry(0.32, 0.24, 0.28);
   const materials = [
     new THREE.MeshStandardMaterial({ color, roughness: 0.78, metalness: 0.2 }),
@@ -1001,7 +1001,7 @@ function removeActor(actor) {
   }
   updateSelectionPanel();
   if (actor.team === 'enemy' && actor.type === 'centro') {
-    notify('Núcleo enemigo destruido. El sector es nuestro.');
+    notify('Enemy core destroyed. The sector is ours.');
     setTimeout(showVictory, 1200);
   }
 }
@@ -1131,7 +1131,7 @@ function spawnWave() {
     unit.target = closestActor(unit, (actor) => actor.team === 'player' && actor.kind === 'building');
   }
   app.waveAt = app.elapsed + Math.max(45, 78 - app.wave * 4);
-  notify(`Incursión enemiga ${app.wave} detectada.`, true);
+  notify(`Enemy raid ${app.wave} detected.`, true);
   sound.alarm();
 }
 
@@ -1245,7 +1245,7 @@ function createSoundscape() {
     master.gain.cancelScheduledValues(context.currentTime);
     master.gain.linearRampToValueAtTime(value ? 0.65 : 0, context.currentTime + 0.3);
     $('#audio-toggle').setAttribute('aria-pressed', String(value));
-    $('#audio-toggle').setAttribute('aria-label', value ? 'Silenciar sonido' : 'Activar sonido');
+    $('#audio-toggle').setAttribute('aria-label', value ? 'Mute sound' : 'Enable sound');
   };
   const tone = (frequency, duration = 0.08, volume = 0.05) => {
     if (!enabled || !context) return;
@@ -1325,8 +1325,8 @@ $('#start-game').addEventListener('click', () => {
   fogOfWar.update();
   $('#intro').classList.add('is-leaving');
   $('#hud').classList.remove('is-hidden');
-  notify('Operación Nuevo Horizonte iniciada.');
-  notify('Ordena a tus operarios recolectar recursos.');
+  notify('Operation New Horizon launched.');
+  notify('Order your workers to gather resources.');
   sound.tone(440, 0.18);
   setTimeout(() => { $('#intro').style.display = 'none'; }, 1150);
 });
@@ -1381,8 +1381,8 @@ addEventListener('resize', () => {
 
 renderHUD();
 drawMinimap();
-loadingStep(100, 'Sector preparado.');
+loadingStep(100, 'Sector ready.');
 requestAnimationFrame(() => setTimeout(() => loading.classList.add('is-done'), 450));
 animate();
 
-// ponytail: movimiento directo; añadir navegación en malla cuando el terreno bloquee rutas reales.
+// ponytail: direct movement; add navmesh pathfinding when terrain creates real route blockers.

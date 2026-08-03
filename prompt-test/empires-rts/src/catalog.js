@@ -3,42 +3,42 @@ export const ERA_INICIAL = ERA_IDS[0];
 export const ERA_FINAL = ERA_IDS.at(-1);
 
 export const ERAS = Object.freeze([
-  Object.freeze({ id: 1800, nombre: 'Era del Vapor', equivalente: 'Edad Oscura', descripcion: 'Vapor, carbón y producción artesanal.' }),
-  Object.freeze({ id: 1900, nombre: 'Era Industrial', equivalente: 'Edad Feudal', descripcion: 'Motores, acero y producción en serie.' }),
-  Object.freeze({ id: 2000, nombre: 'Era Digital', equivalente: 'Edad de los Castillos', descripcion: 'Redes, automatización y guerra de precisión.' }),
-  Object.freeze({ id: 2100, nombre: 'Era de Fusión', equivalente: 'Edad Imperial', descripcion: 'Fusión, inteligencia sintética y materia programable.' }),
+  Object.freeze({ id: 1800, nombre: 'Steam Age', equivalente: 'Dark Age', descripcion: 'Steam, coal, and handcrafted production.' }),
+  Object.freeze({ id: 1900, nombre: 'Industrial Age', equivalente: 'Feudal Age', descripcion: 'Engines, steel, and mass production.' }),
+  Object.freeze({ id: 2000, nombre: 'Digital Age', equivalente: 'Castle Age', descripcion: 'Networks, automation, and precision warfare.' }),
+  Object.freeze({ id: 2100, nombre: 'Fusion Age', equivalente: 'Imperial Age', descripcion: 'Fusion, synthetic intelligence, and programmable matter.' }),
 ]);
 
 export const RECURSOS = Object.freeze({
-  alimentos: Object.freeze({ id: 'alimentos', nombre: 'Alimentos', icono: '◆', color: '#e5b85c' }),
-  materiales: Object.freeze({ id: 'materiales', nombre: 'Materiales', icono: '⬢', color: '#b6c2c9' }),
-  energia: Object.freeze({ id: 'energia', nombre: 'Energía', icono: 'ϟ', color: '#65d5ff' }),
-  datos: Object.freeze({ id: 'datos', nombre: 'Datos', icono: '◫', color: '#c088ff' }),
+  alimentos: Object.freeze({ id: 'alimentos', nombre: 'Food', icono: '◆', color: '#e5b85c' }),
+  materiales: Object.freeze({ id: 'materiales', nombre: 'Materials', icono: '⬢', color: '#b6c2c9' }),
+  energia: Object.freeze({ id: 'energia', nombre: 'Energy', icono: 'ϟ', color: '#65d5ff' }),
+  datos: Object.freeze({ id: 'datos', nombre: 'Data', icono: '◫', color: '#c088ff' }),
 });
 export const RECURSO_IDS = Object.freeze(Object.keys(RECURSOS));
 
-// Patrón de recursos narrativos por era adaptado de la referencia MIT:
+// Narrative resource pattern by age, adapted from the MIT reference:
 // https://github.com/alandaitch/imperios-1800-2100
 export const IDENTIDAD_ERAS = Object.freeze({
   1800: Object.freeze({
-    tema: 'Vapor',
-    recursos: Object.freeze({ alimentos: 'Provisiones', materiales: 'Madera y hierro', energia: 'Carbón', datos: 'Planos' }),
-    bono: Object.freeze({ nombre: 'Calderas eficientes', recurso: 'energia', multiplicador: 1.1 }),
+    tema: 'Steam',
+    recursos: Object.freeze({ alimentos: 'Provisions', materiales: 'Timber and iron', energia: 'Coal', datos: 'Blueprints' }),
+    bono: Object.freeze({ nombre: 'Efficient boilers', recurso: 'energia', multiplicador: 1.1 }),
   }),
   1900: Object.freeze({
     tema: 'Industrial',
-    recursos: Object.freeze({ alimentos: 'Raciones', materiales: 'Acero', energia: 'Petróleo', datos: 'Patentes' }),
-    bono: Object.freeze({ nombre: 'Producción en serie', recurso: 'materiales', multiplicador: 1.1 }),
+    recursos: Object.freeze({ alimentos: 'Rations', materiales: 'Steel', energia: 'Oil', datos: 'Patents' }),
+    bono: Object.freeze({ nombre: 'Mass production', recurso: 'materiales', multiplicador: 1.1 }),
   }),
   2000: Object.freeze({
     tema: 'Digital',
-    recursos: Object.freeze({ alimentos: 'Biocultivos', materiales: 'Compuestos', energia: 'Red eléctrica', datos: 'Información' }),
-    bono: Object.freeze({ nombre: 'Economía en red', recurso: 'datos', multiplicador: 1.1 }),
+    recursos: Object.freeze({ alimentos: 'Biocrops', materiales: 'Composites', energia: 'Power grid', datos: 'Intelligence' }),
+    bono: Object.freeze({ nombre: 'Networked economy', recurso: 'datos', multiplicador: 1.1 }),
   }),
   2100: Object.freeze({
-    tema: 'Fusión',
-    recursos: Object.freeze({ alimentos: 'Nutrientes sintéticos', materiales: 'Nanofibra', energia: 'Fusión', datos: 'Cómputo cuántico' }),
-    bono: Object.freeze({ nombre: 'Reactores de fusión', recurso: 'energia', multiplicador: 1.15 }),
+    tema: 'Fusion',
+    recursos: Object.freeze({ alimentos: 'Synthetic nutrients', materiales: 'Nanofiber', energia: 'Fusion', datos: 'Quantum computing' }),
+    bono: Object.freeze({ nombre: 'Fusion reactors', recurso: 'energia', multiplicador: 1.15 }),
   }),
 });
 
@@ -52,8 +52,8 @@ export const COSTES_AVANCE = Object.freeze({
 const LINEAS_UNIDAD = [
   {
     tipo: 'trabajador',
-    rol: 'Economía',
-    nombres: ['Obrero', 'Operario', 'Ingeniero de campo', 'Sintético'],
+    rol: 'Economy',
+    nombres: ['Worker', 'Operator', 'Field Engineer', 'Synthetic'],
     costes: [
       { alimentos: 50 },
       { alimentos: 55 },
@@ -66,8 +66,8 @@ const LINEAS_UNIDAD = [
   },
   {
     tipo: 'infanteria',
-    rol: 'Infantería',
-    nombres: ['Fusilero', 'Soldado', 'Comando', 'Centinela fotónico'],
+    rol: 'Infantry',
+    nombres: ['Rifleman', 'Soldier', 'Commando', 'Photon Sentinel'],
     costes: [
       { alimentos: 60, materiales: 20 },
       { alimentos: 70, materiales: 30 },
@@ -80,8 +80,8 @@ const LINEAS_UNIDAD = [
   },
   {
     tipo: 'vehiculo',
-    rol: 'Unidad rápida',
-    nombres: ['Dragón blindado', 'Tanque', 'Blindado autónomo', 'Meca gravitatorio'],
+    rol: 'Fast Unit',
+    nombres: ['Armored Dragoon', 'Tank', 'Autonomous Armor', 'Gravity Mech'],
     costes: [
       { alimentos: 80, materiales: 80 },
       { materiales: 120, energia: 50 },
@@ -94,8 +94,8 @@ const LINEAS_UNIDAD = [
   },
   {
     tipo: 'artilleria',
-    rol: 'Asedio',
-    nombres: ['Cañón de campaña', 'Obús', 'Lanzamisiles', 'Cañón de plasma'],
+    rol: 'Siege',
+    nombres: ['Field Gun', 'Howitzer', 'Missile Launcher', 'Plasma Cannon'],
     costes: [
       { materiales: 120, energia: 40 },
       { materiales: 160, energia: 80 },
@@ -111,8 +111,8 @@ const LINEAS_UNIDAD = [
 const LINEAS_EDIFICIO = [
   {
     tipo: 'centro',
-    funcion: 'Centro principal',
-    nombres: ['Puesto industrial', 'Ayuntamiento moderno', 'Centro de mando', 'Núcleo de colonia'],
+    funcion: 'Main center',
+    nombres: ['Industrial Outpost', 'Modern Town Hall', 'Command Center', 'Colony Core'],
     costes: [
       { alimentos: 200, materiales: 350 },
       { alimentos: 250, materiales: 450, energia: 100 },
@@ -124,8 +124,8 @@ const LINEAS_EDIFICIO = [
   },
   {
     tipo: 'vivienda',
-    funcion: 'Aumenta la población',
-    nombres: ['Barracón', 'Casa urbana', 'Módulo habitacional', 'Hábitat orbital'],
+    funcion: 'Increases population',
+    nombres: ['Bunkhouse', 'Urban House', 'Habitation Module', 'Orbital Habitat'],
     costes: [
       { materiales: 100 },
       { materiales: 120, energia: 20 },
@@ -137,8 +137,8 @@ const LINEAS_EDIFICIO = [
   },
   {
     tipo: 'cuartel',
-    funcion: 'Entrena infantería',
-    nombres: ['Arsenal', 'Cuartel mecanizado', 'Base táctica', 'Bastión fotónico'],
+    funcion: 'Trains infantry',
+    nombres: ['Arsenal', 'Mechanized Barracks', 'Tactical Base', 'Photon Bastion'],
     costes: [
       { materiales: 180 },
       { materiales: 220, energia: 50 },
@@ -150,8 +150,8 @@ const LINEAS_EDIFICIO = [
   },
   {
     tipo: 'fabrica',
-    funcion: 'Produce vehículos y artillería',
-    nombres: ['Fundición', 'Fábrica de guerra', 'Planta robótica', 'Ensamblador nanométrico'],
+    funcion: 'Produces vehicles and artillery',
+    nombres: ['Foundry', 'War Factory', 'Robotics Plant', 'Nanometric Assembler'],
     costes: [
       { materiales: 240, energia: 60 },
       { materiales: 300, energia: 100 },
@@ -163,8 +163,8 @@ const LINEAS_EDIFICIO = [
   },
   {
     tipo: 'laboratorio',
-    funcion: 'Genera datos',
-    nombres: ['Academia', 'Instituto técnico', 'Centro de datos', 'Singularidad aplicada'],
+    funcion: 'Generates data',
+    nombres: ['Academy', 'Technical Institute', 'Data Center', 'Applied Singularity'],
     costes: [
       { materiales: 160, energia: 80 },
       { materiales: 200, energia: 120 },

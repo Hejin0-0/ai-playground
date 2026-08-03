@@ -102,4 +102,4 @@ const fogPixels = visibility.writeRgba(new Uint8Array(20 * 20 * 4));
 const fogAlphas = fogPixels.filter((_, index) => index % 4 === 3);
 assert.ok(fogAlphas.includes(0) && fogAlphas.includes(112) && fogAlphas.includes(245));
 
-console.log('gameplay.test.js: todo correcto');
+console.log('gameplay.test.js: all checks passed');

@@ -1,7 +1,7 @@
-# Prompt de origen
+# Original prompt — Dominions 2100
 
-Crear en Three.js un RTS en español inspirado en la profundidad jugable de *Age of Empires II*, trasladado a las eras 1800–2100, con dirección visual de alta gama, economía, construcción, combate, progreso histórico y revisión visual iterativa mediante subagentes.
+Create *Dominions 2100*, an English-language RTS in Three.js inspired by the gameplay depth of *Age of Empires II*, reimagined across the eras from 1800 to 2100, with high-end visual direction, an economy, construction, combat, historical progression, and iterative visual review by subagents.
 
-Requisitos operativos: carpeta `empires-rts` en `Documents/prep/prompt-test`, entrega verificada y commit final en `main`.
+Operational requirements: an `empires-rts` folder in `Documents/prep/prompt-test`, a verified deliverable, and a final commit on `main`.
 
-Referencia adicional solicitada: [alandaitch/imperios-1800-2100](https://github.com/alandaitch/imperios-1800-2100). Se usó para contrastar patrones y métricas, no para copiar su implementación.
+Additional requested reference: [alandaitch/imperios-1800-2100](https://github.com/alandaitch/imperios-1800-2100). It was used to compare patterns and metrics, not to copy its implementation.
