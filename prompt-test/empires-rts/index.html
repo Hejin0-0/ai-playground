@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071419" />
+    <meta name="description" content="Dominios 2100, un juego de estrategia en tiempo real en Three.js." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23071419'/%3E%3Cpath d='M32 9 54 32 32 55 10 32Z' fill='none' stroke='%23d8bd78' stroke-width='3'/%3E%3Ctext x='32' y='41' text-anchor='middle' font-size='28' fill='%23f4dfa1'%3EA%3C/text%3E%3C/svg%3E" />
+    <title>Dominios 2100 — RTS</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Saltar al campo de batalla</a>
+
+    <main id="main-content" class="game-shell" aria-label="Dominios 2100">
+      <section id="battlefield" class="battlefield" data-depth="3" aria-label="Campo de batalla tridimensional">
+        <div id="scene" class="scene-mount" role="img" aria-label="Mapa isométrico con unidades, edificios y recursos"></div>
+        <div id="selection-box" class="selection-box" aria-hidden="true"></div>
+        <div id="world-tooltip" class="world-tooltip" role="status" aria-live="polite"></div>
+      </section>
+
+      <div class="atmosphere depth-1" data-depth="1" aria-hidden="true"></div>
+      <div class="grain depth-5" data-depth="5" aria-hidden="true"></div>
+      <div class="vignette depth-5" data-depth="5" aria-hidden="true"></div>
+
+      <section id="hud" class="hud depth-4 is-hidden" data-depth="4" aria-label="Interfaz de mando">
+        <header class="top-command">
+          <div class="faction-badge" aria-label="Facción Liga Atlas">
+            <span class="faction-mark" aria-hidden="true">A</span>
+            <span><small>COMANDO</small><strong>LIGA ATLAS</strong></span>
+          </div>
+
+          <div class="resources" aria-label="Recursos disponibles">
+            <div class="resource" data-resource="alimentos"><i aria-hidden="true">●</i><span><small>ALIMENTOS</small><strong id="resource-alimentos">0</strong></span></div>
+            <div class="resource" data-resource="materiales"><i aria-hidden="true">◆</i><span><small>MATERIALES</small><strong id="resource-materiales">0</strong></span></div>
+            <div class="resource" data-resource="energia"><i aria-hidden="true">ϟ</i><span><small>ENERGÍA</small><strong id="resource-energia">0</strong></span></div>
+            <div class="resource" data-resource="datos"><i aria-hidden="true">⌁</i><span><small>DATOS</small><strong id="resource-datos">0</strong></span></div>
+            <div class="resource population"><i aria-hidden="true">♟</i><span><small>POBLACIÓN</small><strong id="resource-poblacion">0/0</strong></span></div>
+          </div>
+
+          <div class="system-actions" aria-label="Controles del sistema">
+            <button id="audio-toggle" class="icon-button" type="button" aria-pressed="false" aria-label="Activar sonido">♫</button>
+            <button id="motion-toggle" class="icon-button" type="button" aria-pressed="false" aria-label="Reducir animaciones">✦</button>
+            <button id="help-toggle" class="icon-button" type="button" aria-label="Abrir ayuda">?</button>
+          </div>
+        </header>
+
+        <div class="era-ribbon" aria-label="Progreso histórico">
+          <div class="era-line" aria-hidden="true"><span id="era-progress"></span></div>
+          <ol id="era-track">
+            <li class="active" data-era="0"><b>1800</b><small>ERA DEL VAPOR</small></li>
+            <li data-era="1"><b>1900</b><small>ERA INDUSTRIAL</small></li>
+            <li data-era="2"><b>2000</b><small>ERA DIGITAL</small></li>
+            <li data-era="3"><b>2100</b><small>ERA DE FUSIÓN</small></li>
+          </ol>
+        </div>
+
+        <aside class="mission-card glass-panel" aria-label="Objetivos de misión">
+          <div class="panel-eyebrow"><span>MISIÓN 01</span><span id="mission-clock">00:00</span></div>
+          <h2>Una nueva potencia</h2>
+          <p>Domina la península antes de que el Consorcio controle el futuro.</p>
+          <ul id="objectives">
+            <li data-objective="era"><i aria-hidden="true"></i>Alcanza la Era Digital</li>
+            <li data-objective="army"><i aria-hidden="true"></i>Reúne 6 unidades</li>
+            <li data-objective="enemy"><i aria-hidden="true"></i>Destruye el núcleo enemigo</li>
+          </ul>
+        </aside>
+
+        <aside class="intel-feed" aria-label="Registro táctico">
+          <div class="intel-title"><span>INTELIGENCIA</span><i aria-hidden="true"></i></div>
+          <div id="notifications" aria-live="polite"></div>
+        </aside>
+
+        <section class="minimap-shell glass-panel" aria-label="Minimapa táctico">
+          <div class="minimap-header"><span>SECTOR K-7</span><span id="fps-counter">60 FPS</span></div>
+          <canvas id="minimap" width="220" height="160" aria-label="Vista general del mapa"></canvas>
+          <div class="map-coordinates">43°N <span>•</span> 08°O</div>
+        </section>
+
+        <footer class="command-deck" aria-label="Panel de órdenes">
+          <section class="selection-panel glass-panel" aria-label="Selección actual">
+            <div id="selection-portrait" class="selection-portrait"><span aria-hidden="true">⌖</span></div>
+            <div class="selection-copy">
+              <small id="selection-class">COMANDO CENTRAL</small>
+              <h2 id="selection-name">Núcleo Atlas</h2>
+              <div class="health-row"><div class="health-track"><span id="health-fill"></span></div><b id="health-value">1800 / 1800</b></div>
+              <div id="selection-stats" class="selection-stats" aria-label="Estadísticas de combate">
+                <span title="Ataque"><em>ATQ</em> <b id="stat-attack">—</b></span>
+                <span title="Defensa"><em>DEF</em> <b id="stat-defense">—</b></span>
+                <span title="Alcance"><em>ALC</em> <b id="stat-range">—</b></span>
+              </div>
+              <p id="selection-description">Centro económico y estratégico de la colonia.</p>
+            </div>
+          </section>
+
+          <section class="orders-panel glass-panel" aria-label="Órdenes disponibles">
+            <div class="orders-heading"><span id="orders-title">ÓRDENES DEL NÚCLEO</span><small>TECLAS RÁPIDAS</small></div>
+            <div id="command-grid" class="command-grid">
+              <button type="button" data-command="worker"><span class="command-icon">♟</span><span><b>Operario</b><small>50 alimentos</small></span><kbd>Q</kbd></button>
+              <button type="button" data-command="infantry"><span class="command-icon">⌁</span><span><b>Infantería</b><small>70 alimentos · 25 materiales</small></span><kbd>W</kbd></button>
+              <button type="button" data-command="house"><span class="command-icon">⌂</span><span><b>Hábitat</b><small>80 materiales</small></span><kbd>A</kbd></button>
+              <button type="button" data-command="factory"><span class="command-icon">⚙</span><span><b>Arsenal</b><small>140 materiales · 40 energía</small></span><kbd>S</kbd></button>
+              <button type="button" data-command="tower"><span class="command-icon">△</span><span><b>Defensa</b><small>110 materiales · 50 energía</small></span><kbd>D</kbd></button>
+              <button type="button" data-command="advance" class="advance-command"><span class="command-icon">⟰</span><span><b>Avanzar de era</b><small id="advance-cost">Coste: 400 · 250</small></span><kbd>E</kbd></button>
+            </div>
+          </section>
+
+          <section class="status-panel glass-panel" aria-label="Estado estratégico">
+            <div class="threat-orbit" aria-hidden="true"><span></span><i></i><b>72</b></div>
+            <div><small>NIVEL DE AMENAZA</small><strong id="threat-label">ELEVADO</strong><p>Incursión estimada</p><time id="wave-timer">02:00</time></div>
+          </section>
+        </footer>
+
+        <div class="camera-hints" aria-hidden="true"><span>WASD <b>MOVER</b></span><span>RUEDA <b>ZOOM</b></span><span>Q / E <b>GIRAR</b></span><span>CLIC DCHO. <b>ORDENAR</b></span></div>
+      </section>
+
+      <section id="intro" class="intro-screen depth-4" data-depth="4" aria-labelledby="intro-title">
+        <div class="intro-ornament" aria-hidden="true"><span></span><i>1800</i><b>2100</b></div>
+        <div class="intro-copy">
+          <p class="intro-kicker">UNA HISTORIA QUE AÚN NO HA SIDO ESCRITA</p>
+          <h1 id="intro-title"><span>DOMINIOS</span><b>2100</b></h1>
+          <p class="intro-lead">Del vapor a la fusión. Construye una nación, domina cuatro eras y decide quién heredará el próximo siglo.</p>
+          <div class="faction-choice" role="group" aria-label="Elige una facción">
+            <button type="button" class="selected" data-faction="atlas"><span>A</span><b>Liga Atlas</b><small>Industria · equilibrio</small></button>
+            <button type="button" data-faction="helios"><span>H</span><b>Pacto Helios</b><small>Energía · tecnología</small></button>
+            <button type="button" data-faction="boreal"><span>B</span><b>Unión Boreal</b><small>Defensa · economía</small></button>
+          </div>
+          <button id="start-game" class="primary-cta" type="button"><span>INICIAR CAMPAÑA</span><small>OPERACIÓN NUEVO HORIZONTE</small><i aria-hidden="true">→</i></button>
+          <p class="intro-meta"><span>ESCENARIO JUGABLE</span><i></i><span>THREE.JS · TIEMPO REAL</span></p>
+        </div>
+        <div class="intro-era-list" aria-hidden="true">
+          <span class="active">01 / VAPOR</span><span>02 / INDUSTRIA</span><span>03 / DIGITAL</span><span>04 / FUSIÓN</span>
+        </div>
+      </section>
+
+      <dialog id="help-dialog" class="help-dialog">
+        <form method="dialog">
+          <button class="dialog-close" aria-label="Cerrar ayuda">×</button>
+          <p class="panel-eyebrow">MANUAL DE CAMPO</p>
+          <h2>Control estratégico</h2>
+          <div class="help-grid">
+            <div><kbd>W A S D</kbd><span>Mover cámara</span></div>
+            <div><kbd>Q / E</kbd><span>Girar cámara</span></div>
+            <div><kbd>RUEDA</kbd><span>Acercar / alejar</span></div>
+            <div><kbd>CLIC</kbd><span>Seleccionar unidad</span></div>
+            <div><kbd>ARRASTRAR</kbd><span>Selección múltiple</span></div>
+            <div><kbd>SHIFT + CLIC</kbd><span>Sumar o quitar selección</span></div>
+            <div><kbd>DOBLE CLIC</kbd><span>Seleccionar el mismo tipo visible</span></div>
+            <div><kbd>CLIC DERECHO</kbd><span>Mover o atacar</span></div>
+            <div><kbd>BORDE / SHIFT</kbd><span>Desplazar / acelerar cámara</span></div>
+            <div><kbd>H</kbd><span>Centrar base</span></div>
+            <div><kbd>.</kbd><span>Buscar operario inactivo</span></div>
+          </div>
+          <p>Selecciona operarios y ordénales trabajar sobre árboles, minerales o nodos de energía. Construye hábitats para aumentar la población y arsenales para desplegar un ejército.</p>
+        </form>
+      </dialog>
+
+      <section id="end-screen" class="end-screen" aria-live="assertive" aria-hidden="true">
+        <p>OPERACIÓN COMPLETADA</p><h2>El futuro te pertenece</h2><button type="button" id="restart-game">Jugar de nuevo</button>
+      </section>
+
+      <div id="loading-screen" class="loading-screen" role="status" aria-live="polite">
+        <div class="loading-sigil" aria-hidden="true"><span></span><b>A</b></div>
+        <p>GENERANDO TEATRO DE OPERACIONES</p>
+        <div><span id="loading-bar"></span></div>
+        <small id="loading-status">Inicializando cronología…</small>
+      </div>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
