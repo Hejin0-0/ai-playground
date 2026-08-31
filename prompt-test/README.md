@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/readme/hero.svg" width="100%" alt="prompt-test — four browser experiments, each grown from a single prompt">
+  <img src="./assets/readme/hero.svg" width="100%" alt="prompt-test — browser experiments grown from source prompts">
 </p>
 
 <p align="center">
@@ -7,6 +7,7 @@
 </p>
 
 <p align="center">
+  <a href="./inkbound-isle">inkbound-isle</a> ·
   <a href="./night-street">night-street</a> ·
   <a href="./call-guys">call-guys</a> ·
   <a href="./empires-rts">empires-rts</a> ·
@@ -26,6 +27,20 @@ Everything here runs in a browser. No engine, no asset store, no build server.
 <br>
 
 <img src="./assets/readme/section-projects.svg" width="100%" alt="Section: the projects — what each prompt asked for, and what came back">
+
+### 🦖 [inkbound-isle](./inkbound-isle)
+
+A first-person dinosaur-survival expedition across a procedurally generated island.
+
+Gathering, crafting, building, survival meters, day/night, tameable companions,
+hostile pack hunters, an apex encounter, local saves and bounded LAN multiplayer
+are connected into one playable run. Every mesh, surface map, effect, cloud, sound
+and UI accent is generated in code. Its LOOP ledger keeps the uncomfortable part
+visible too: 170 automated checks and the runtime budgets pass, while the latest
+blind visual round unanimously preferred the retained challenger but still scored
+it far below the project's deliberately strict AAA gate.
+
+`Three.js` · `Vite` · `TypeScript` · `WebSocket`
 
 ### 🌃 [night-street](./night-street)
 
@@ -78,8 +93,9 @@ npm install
 npm run dev
 ```
 
-Then open the URL it prints. `night-street` also has `npm run check`, which runs
-its type check, its build, and the node tests that guard the street layout.
+Then open the URL it prints. `night-street` and `inkbound-isle` also have
+`npm run check`; Inkbound Isle additionally includes browser and LAN-session smoke
+checks documented in its own README.
 
 <br>
 
